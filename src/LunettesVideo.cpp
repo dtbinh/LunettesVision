@@ -36,7 +36,13 @@ LunettesVideo::LunettesVideo(void)
 	cameraCount = 1;
 	resX = WIDTH;
 	resY = HEIGHT;
+	//TEST
+	int num;
+	is_GetNumberOfCameras( &num );
+	cout << "Nombre de cameras = " << num << endl;
+	//TEST
 	initProfilCameras();
+	
 	if(!switchProfile(0)) {
 		cout << "Fin du Programme" <<endl;
 		return;
@@ -49,6 +55,7 @@ LunettesVideo::LunettesVideo(void)
 
 	INT nNumCam;
 	if( is_GetNumberOfCameras( &nNumCam ) == IS_SUCCESS) {
+		
 		if( nNumCam >= 1 ) {
 			// Create new list with suitable size
 			UEYE_CAMERA_LIST* pucl;
@@ -111,15 +118,15 @@ bool LunettesVideo::initProfilCameras()
 
 					camList[camIndex] = new Camera(camIndex,getCamRes(camIndex));
 
-					if(camList.at(camIndex)->active){					 
+					if(camList.at(camIndex)->active == true){					 
 						cout << "OK" << endl;
-						cout << "camIndex" <<camIndex<<endl;
 					}
 					else 
 						cout << "ERROR" << endl;
 				}
 
-				if(!camList.at(camIndex)->active)errorLoadingCameras = true;
+				if(!camList.at(camIndex)->active)
+					errorLoadingCameras = true;
 				areas.at(a)->camera = camList.at(areas.at(a)->camIndex);
 			}
 		}
@@ -173,21 +180,11 @@ void LunettesVideo::run() {
 	Mat finalFrame(resY, resX,CV_8UC3,Scalar(0,0,0));
 	setWindowsParams();
 
-		// Text variables
-	/*const char* text = "HDR On";
-	double hscale = 0.5;
-	double vscale = 2.0;
-	double shear = 0.2;
-	int thickness = 1;
-	int line_type = 8;
-	cv::Font font1;
-	cvInitFont(&font1,CV_FONT_HERSHEY_DUPLEX,hscale,vscale,shear,thickness,line_type);*/
-
 	/// START LOOP ///
 	//////////////////////////////////////////////////////////
 
 	myTimer->start();
-
+	cout<<"Debut Boucle Acquisition"<<endl;
 	do {
 		// Benchmark stuff
 		//if(frame == 1) myTimer->start();
@@ -231,16 +228,17 @@ void LunettesVideo::run() {
 			blendAreasZones(finalFrame);
 		
 		//indicateur HDR
-		/*if(needHdr)
-				cv::putText(finalFrame,"HDR On", cvPoint(resX-150,50),1,2,cv::Scalar(0,255,0),2,CV_AA);
+		if(needHdr)
+				cv::putText(finalFrame,"HDR On", cv::Point(resX-150,50),1,2,cv::Scalar(0,255,0),2);
 		else
-				cv::putText(finalFrame,"HDR Off", cvPoint(resX-150,50),1,2,cv::Scalar(0,0,255),2,CV_AA);
-		*/
+				cv::putText(finalFrame,"HDR Off", cv::Point(resX-150,50),1,2,cv::Scalar(0,0,255),2);
+		
 		currentProfileMutex.unlock();
 		imshow("camera",finalFrame);
 		// Refresh screen !
 		myTimer->changeState(MyTimer::USER_INPUT);
 		key = waitKey(1);
+		cout << "code key pressed = " << key << endl;
 		myTimer->changeState(MyTimer::OTHER);
 		osd->addInput(key);
 
@@ -351,7 +349,7 @@ bool LunettesVideo::switchProfile(int i) {
 	if(currentProfileIndex + i >= 0 && currentProfileIndex + i < profiles.size())
 	{
 		if(!isCameraAviable(profiles[currentProfileIndex+i])) {
-			cout << "Une camera utilisee dans ce profil n'est pas disponible" << endl;
+			cout << "La camera "<<currentProfileIndex+i<<" utilisee dans ce profil n'est pas disponible" << endl;
 			return false;
 		}
 
@@ -362,7 +360,6 @@ bool LunettesVideo::switchProfile(int i) {
 
 		currentProfileIndex += i;
 		currentProfile = profiles[currentProfileIndex];
-
 		startRemapThreads();
 		currentProfileMutex.unlock();
 		return true;
@@ -373,9 +370,12 @@ bool LunettesVideo::switchProfile(int i) {
 bool LunettesVideo::isCameraAviable(Profile* p)
 {
 	std::vector<Area*> areas = p->listArea;
+	
 	for(int a=0; a<areas.size() ;a++)
 	{
 		int camIndex = areas.at(a)->camIndex;
+		if(camList[camIndex]->active) 
+			
 		if(camIndex == -1) continue;
 		if(camList.find(camIndex) == camList.end()){
 			cout << "fin de liste" <<endl;

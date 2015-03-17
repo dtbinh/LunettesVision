@@ -1,5 +1,6 @@
 #include "Area.h"
 #include "opencv2/cudawarping.hpp"
+#include "opencv2/photo/photo.hpp"
 
 //////////////////////////////////////////////////////////////////////////////
 /// CONSTRUCTEUR - DESTRUCTEUR
@@ -30,11 +31,11 @@ Area::~Area(void)
 /// THREAD
 //////////////////////////////////////////////////////////////////////////////
 
-/*
+
 Mat HDR(std::vector<Mat>& images, std::vector<float>& times){
 
 	Mat response;
-    Ptr<CalibrateDebevec> calibrate = createCalibrateDebevec();
+    Ptr<cv::CalibrateDebevec> calibrate = createCalibrateDebevec();
     calibrate->process(images, response, times);
 
     Mat hdr;
@@ -48,13 +49,12 @@ Mat HDR(std::vector<Mat>& images, std::vector<float>& times){
    // imwrite("ldr.png", ldr * 255);
    // imwrite("hdr.hdr", hdr);
 	
-}*/
+}
 
 
 // Remapthreadfunction without FPS computation (faster, no lag)
 void remapThreadFunction(Area* r) 
 {
-	
 	while(!r->needClose) {
 		// Get frame from camera
 		// Upload it on the GPU

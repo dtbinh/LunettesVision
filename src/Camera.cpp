@@ -10,7 +10,7 @@ INT InitCamera (HIDS *hCam, HWND hWnd)
 	int ret = is_ParameterSet(*hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0); //ajout eric
 	if (ret != IS_SUCCESS)
     {
-			printf("probleme chargement des parametres camera de la EEPROM");
+			printf("probleme chargement des parametres camera de la EEPROM - ");
 	}
 
 
@@ -53,7 +53,6 @@ INT InitCamera (HIDS *hCam, HWND hWnd)
 
 Camera::Camera(int index, cv::Size camSize)
 {
-
 	/////////////////////////////////////////////
 	// TEST ERIC 03/09/2014
 	/////////////////////////////////////////////
@@ -61,22 +60,30 @@ Camera::Camera(int index, cv::Size camSize)
 	HWND    m_hwndDisp;
 	m_hCam = (HCAM)0;                           // open next camera
     int nRet = InitCamera (&m_hCam, m_hwndDisp);    // init camera
-
 	nRet = is_AllocImageMem(m_hCam,
                 camSize.width,
                 camSize.height,
                 24,// Nb de bits par pixel
                 &m_pcImageMemory,
                 &m_nMemoryId ); //Alloue emplacement mémoire pour image
-	
 	is_SetImageMem(m_hCam,m_pcImageMemory,m_nMemoryId); //active la zone mémoire
 	if(is_EnableHdr(m_hCam, IS_ENABLE_HDR) != IS_SUCCESS)
 		cout << "HDR uEye impossible" << endl;
 		
-	is_CaptureVideo(m_hCam, IS_DONT_WAIT);//capture l'image live
-
+	if(!is_CaptureVideo(m_hCam, IS_DONT_WAIT)){ //capture l'image live
+		cout << "Camera non active - Error " << endl;
+		active = false;
+		cout << "Code d'erreur de captureVideo : " <<  is_CaptureVideo(m_hCam, IS_DONT_WAIT) << endl;
+		if(is_StopLiveVideo (m_hCam, IS_FORCE_VIDEO_STOP) == IS_SUCCESS){ //force l'arret de la capture
+			cout << "Camera arrete " << endl;
+			if(is_CaptureVideo(m_hCam, IS_DONT_WAIT) == IS_SUCCESS){ //capture l'image live
+				cout << "Camera redemarre " << endl;
+				active = true;
+			}
+		}
+	}else 
+		active = true;
 	cout << "Frame size: " << camSize.width << " x " << camSize.height << " Status : ";
-	
 	//////// FIN TEST ////////////////////
 	
 	/*

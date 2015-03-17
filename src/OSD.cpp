@@ -75,9 +75,9 @@ void OSD::addInput(int key)
 	if(key == -1) return;
 
 	//cout << "New key ! " << key << endl;
-
+	//les valeurs numériques sont utilisé pour linux, les noms des touches (LEFT, RIGHT, ENTER) sont pour windows
 	switch(key) {
-		LEFT
+		case 1113937 : { //LEFT
 			if(displayOsd) {
 				if(currentIndex>0) currentIndex--;
 				showOSD();
@@ -85,26 +85,28 @@ void OSD::addInput(int key)
 				// Change profile
 				parent->switchProfile(-1);
 			}
-			break;
-			RIGHT
-				if(displayOsd) {
-					if(currentIndex<current->children.size()-1) currentIndex++;
+		}
+		break;
+		case 1113939 : { //RIGHT
+			if(displayOsd) {
+				if(currentIndex<current->children.size()-1) currentIndex++;
 					showOSD();
-				} else {
-					// Change profile
-					parent->switchProfile(1);
-				}
-				break;
-
-				UP
-					if(displayOsd) {
-						applyEffect();
-					}
-					else showOSD();
-					if(displayOsd) {
-						showOSD();
-					}
-					break;
+			} else {
+				// Change profile
+				parent->switchProfile(1);
+			}
+		}
+		break;
+		case 1048586 : { //ENTER
+			if(displayOsd) {
+				applyEffect();
+			}
+			else showOSD();
+				if(displayOsd) {
+					showOSD();
+			}
+		}
+		break;
 	}
 }
 
