@@ -69,11 +69,11 @@ public:
 
 private:
 	//Variables
-	bool initialized, needRemap, needHdr;
+	bool initialized, needRemap, needHdr, changeExposure;
 	OSD* osd;
 	int resX, resY;
 	int cameraCount;
-
+	UEYE_CAMERA_LIST* pucl;
 	void blendAreasZones(Mat& img);
 
 	int currentAreaRectangle;

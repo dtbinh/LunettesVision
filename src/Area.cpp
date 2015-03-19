@@ -32,36 +32,76 @@ Area::~Area(void)
 //////////////////////////////////////////////////////////////////////////////
 
 
-Mat HDR(std::vector<Mat>& images, std::vector<float>& times){
+Mat HDR(std::vector<cv::Mat>& images, std::vector<float>& times){
 
 	Mat response;
+	cout<<"nb d'images = "<<images.size()<<endl;
+	cout<<"nb de temps = "<<times.size()<<endl;
+	
     Ptr<cv::CalibrateDebevec> calibrate = createCalibrateDebevec();
+    cout <<"create calibrate" <<endl;
     calibrate->process(images, response, times);
-
-    Mat hdr;
+	cout <<"done calibrate" <<endl;
+	Mat hdr;
     Ptr<MergeDebevec> merge_debevec = createMergeDebevec();
+    cout <<"create merge" <<endl;
     merge_debevec->process(images, hdr, times, response);
+    cout <<"done merge" <<endl;
 
-    Mat ldr;
+    /*cv::cuda::GpuMat ldr;
     Ptr<TonemapDurand> tonemap = createTonemapDurand(2.2f);
-    tonemap->process(hdr, ldr);
+    tonemap->process(hdr, ldr);*/
 
+	return hdr;
    // imwrite("ldr.png", ldr * 255);
    // imwrite("hdr.hdr", hdr);
 	
 }
 
-
 // Remapthreadfunction without FPS computation (faster, no lag)
 void remapThreadFunction(Area* r) 
 {
+	cv::cuda::GpuMat srcGpu;
+	cv::Mat src;
+	std::vector<cv::Mat> listeMat;
 	while(!r->needClose) {
-		// Get frame from camera
-		// Upload it on the GPU
-		cv::cuda::GpuMat srcGpu(r->getCamFrame());
+		
+		if(r->needHdr){
+			if (r->imagesHdr.empty()){
+				r->pParam = 20;
+			}else{
+				r->pParam = 5;
+			}
+			r->timesExpo.push_back(r->pParam);
+			
+			is_Exposure(r->camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &r->pParam, sizeof (r->pParam));
+			// Get frame from camera
+			// Upload it on the GPU
+			//srcGpu.upload(r->getCamFrame());
+			//r->imagesHdr.push_back(srcGpu);
+			
+			//test ac Mat
+			src=(r->getCamFrame());
+			listeMat.push_back(src);
+			
+			//verifier les deux frames
+			
+			if(r->imagesHdr.size() > 1){ //on a enregistrés 2 images
+				r->matrixMutex.lock();
+				//srcGpu.upload(HDR(r->imagesHdr, r->timesExpo));
+				srcGpu.upload(HDR(listeMat, r->timesExpo));
+				listeMat.clear();
+				r->timesExpo.clear();
+				r->matrixMutex.unlock();
+			}
+			else
+				continue; //on recommence à capturer l'image sans envoyer le résultat immédiat.
+		}else{
+			srcGpu.upload(r->getCamFrame());
+		}
 		// Create the output GpuMat
-		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());
-		// Remap or resize the camera frame
+		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
+				
 		if(r->needRemap && r->matrix!=NULL) {
 			r->matrixMutex.lock();
 			cv::cuda::remap(srcGpu,dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),cv::INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
@@ -76,71 +116,6 @@ void remapThreadFunction(Area* r)
 	}
 }
 
-
-
-
-// Remapthreadfunction with FPS computation
-/*
-void remapThreadFunction(Area* r) 
-{
-	FPS fps("Area");	// For performances control
-	cv::Mat src, dst;
-	
-	
-	MyTimer* timer = new MyTimer();
-	timer->changeState(MyTimer::OTHER);
-	timer->start();
-
-	while(!r->needClose) {
-		timer->changeState(MyTimer::GET_CAM_FRAME);
-		
-		// Get frame from camera
-		src = r->getCamFrame();
-		
-		timer->changeState(MyTimer::MEMORY_TRANSIT);
-
-		// Upload it on the GPU
-		cv::gpu::GpuMat srcGpu;
-		srcGpu.upload(src);
-		timer->changeState(MyTimer::OTHER);
-
-		// Create the output GpuMat
-		cv::gpu::GpuMat dstGpu(r->getDisplaySize(),src.type());
-
-		timer->changeState(MyTimer::REMAP_RESIZE);
-
-		// Remap or resize the camera frame
-		if(r->needRemap && r->matrix!=NULL) {
-			r->matrixMutex.lock();
-			cv::gpu::remap(srcGpu,dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),CV_INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
-			r->matrixMutex.unlock();
-		} else {
-			cv::gpu::resize(srcGpu,dstGpu,r->getDisplaySize());
-		}
-
-		timer->changeState(MyTimer::MEMORY_TRANSIT);
-
-		// Transfer the output frame from the Gpu
-		dst = cv::Mat(dstGpu);
-
-
-		timer->changeState(MyTimer::OTHER);
-
-		// There was one computed frame ! (for FPS computing)
-		
-		
-		fps.calculate();  
-		timer->changeState(MyTimer::IMAGE_COPY);
-
-		// Copy the output frame on the shared memory with the main thread
-		r->frameMutex.lock();
-		dst.copyTo((r->currentFrame));
-		r->frameMutex.unlock();
-		timer->changeState(MyTimer::OTHER);
-	}
-	timer->stop();
-	timer->print();
-}*/
 
 void Area::startThread()
 {

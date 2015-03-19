@@ -27,6 +27,7 @@ LunettesVideo::LunettesVideo(void)
 	showSelectArea = false;
 	needClose = false;
 	needHdr = false;
+	changeExposure = false;
 	currentProfile = NULL;
 
 	// Initialisation
@@ -55,31 +56,24 @@ LunettesVideo::LunettesVideo(void)
 
 	INT nNumCam;
 	if( is_GetNumberOfCameras( &nNumCam ) == IS_SUCCESS) {
-		
 		if( nNumCam >= 1 ) {
-			// Create new list with suitable size
-			UEYE_CAMERA_LIST* pucl;
+			// Initialize list with suitable size
 			pucl = (UEYE_CAMERA_LIST*) new BYTE [sizeof (DWORD) + nNumCam * sizeof (UEYE_CAMERA_INFO)];
 			pucl->dwCount = nNumCam;
-
 			//Retrieve camera info
 			if (is_GetCameraList(pucl) == IS_SUCCESS) {
-				int iCamera;
-				for (iCamera = 0; iCamera < (int)pucl->dwCount; iCamera++) {
-					HIDS hCam = (int)pucl->uci[iCamera].dwDeviceID;
-
-					int	ret = is_ParameterSet(hCam, IS_PARAMETERSET_CMD_GET_HW_PARAMETERSET_AVAILABLE, NULL, 0);
+				for (int iCamera = 0; iCamera < camList.size(); iCamera++) {
+					camList[iCamera]->cameraID = pucl->uci[iCamera].dwCameraID; 
+					int	ret = is_ParameterSet(camList[iCamera]->hCam, IS_PARAMETERSET_CMD_GET_HW_PARAMETERSET_AVAILABLE, NULL, 0);
 					if(ret != IS_SUCCESS){
-						cout <<"Params EPROM non supportés par Camera no "<<  pucl->uci[iCamera].dwCameraID<<endl;
+						cout <<"Params EPROM non supportés par Camera no "<< camList[iCamera]->cameraID<<endl;
 					}
-					ret = is_ParameterSet(hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0);
-					cout << "Camera no " << pucl->uci[iCamera].dwCameraID << " - loading code (0 = OK) : " << ret << endl;
+					ret = is_ParameterSet(camList[iCamera]->hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0);
+					cout << "Camera no " << camList[iCamera]->cameraID<< " - loading code (0 = OK) : " << ret << endl;
 				}
 			}
 		}
 	}
-
-
 	initialized = true;
 }
 
@@ -177,6 +171,7 @@ void LunettesVideo::run() {
 
 	int frame = 0;
 	int key = 0;
+	double pParam;
 	Mat finalFrame(resY, resX,CV_8UC3,Scalar(0,0,0));
 	setWindowsParams();
 
@@ -185,6 +180,7 @@ void LunettesVideo::run() {
 
 	myTimer->start();
 	cout<<"Debut Boucle Acquisition"<<endl;
+	
 	do {
 		// Benchmark stuff
 		//if(frame == 1) myTimer->start();
@@ -196,6 +192,15 @@ void LunettesVideo::run() {
 		///////////////////////////////////////////
 
 		currentProfileMutex.lock();
+		if (changeExposure && !needHdr) {
+			if (!needHdr){
+				pParam = 10;
+				for (int iCamera = 0; iCamera < camList.size(); iCamera++) {
+					is_Exposure(camList[iCamera]->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &pParam, sizeof (pParam));
+				}
+			}
+		}
+		changeExposure = false;
 		for(int i = 0;i<currentProfile->listArea.size();i++) {
 			Area* r = currentProfile->listArea.at(i);
 			if(!r->hidden) {
@@ -238,7 +243,6 @@ void LunettesVideo::run() {
 		// Refresh screen !
 		myTimer->changeState(MyTimer::USER_INPUT);
 		key = waitKey(1);
-		cout << "code key pressed = " << key << endl;
 		myTimer->changeState(MyTimer::OTHER);
 		osd->addInput(key);
 
@@ -314,6 +318,7 @@ void LunettesVideo::switchHdr() {
 		r->switchHdr();
 	}
 	needHdr = !needHdr;
+	changeExposure = true;
 }
 
 void LunettesVideo::switchRemap() {

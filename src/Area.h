@@ -16,7 +16,8 @@ public:
 	double zoom;		// For remap
 	cv::Scalar color;	//If this Area is a color Area
 	Type type;			// Camera or color ?
-
+	std::vector<cv::cuda::GpuMat> imagesHdr; 
+	std::vector<float> timesExpo;
 	Matrix* matrix;			// Remap matrix
 	cv::Rect displayZone;	
 	cv::Rect cameraROI;		
@@ -27,7 +28,7 @@ public:
 	//cv::Mat currentFrame;	// Shared frame with the main thread
 	cv::cuda::GpuMat currentFrame;
 	Camera* camera;
-
+	double pParam;
 	std::thread remapThread;
 	std::mutex frameMutex;
 	std::mutex matrixMutex;
