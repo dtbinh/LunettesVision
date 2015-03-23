@@ -63,17 +63,37 @@ Camera::Camera(int index, cv::Size camSize)
 	nRet = is_AllocImageMem(hCam,
                 camSize.width,
                 camSize.height,
-                24,// Nb de bits par pixel
-                &m_pcImageMemory,
-                &m_nMemoryId ); //Alloue emplacement mémoire pour image
-	is_SetImageMem(hCam,m_pcImageMemory,m_nMemoryId); //active la zone mémoire
+                32,// Nb de bits par pixel
+                &m_pcImageMemory1,
+                &m_nMemoryId1 ); //Alloue emplacement mémoire pour image
+	is_SetImageMem(hCam,m_pcImageMemory1,m_nMemoryId1); //active la zone mémoire
+	
+	//En double pour la sequence
+	nRet = is_AllocImageMem(hCam,
+                camSize.width,
+                camSize.height,
+                32,// Nb de bits par pixel
+                &m_pcImageMemory2,
+                &m_nMemoryId2 ); //Alloue emplacement mémoire pour image
+	is_SetImageMem(hCam,m_pcImageMemory2,m_nMemoryId2); //active la zone mémoire
+	
+	
 	if(is_EnableHdr(hCam, IS_ENABLE_HDR) != IS_SUCCESS)
 		cout << "HDR uEye impossible" << endl;
-	int rep = is_CaptureVideo(hCam, IS_DONT_WAIT);
-	if(rep != 0){ //capture l'image live
+	if (is_SetGlobalShutter(hCam, IS_GET_GLOBAL_SHUTTER) == IS_SUCCESS) {
+		cout << "GlobalShutter Mode" << endl;
+		nRet = is_SetGlobalShutter(hCam, IS_SET_GLOBAL_SHUTTER_ON);
+		cout <<"code de retour = " << nRet << endl;
+	}else
+		cout << "GlobalShutter Mode non supporte" << endl;
+		
+	is_AddToSequence(hCam, m_pcImageMemory1, m_nMemoryId1 ); //prepare la sequence d'images (pour la file d'images)
+	is_AddToSequence(hCam, m_pcImageMemory2, m_nMemoryId2 ); //prepare la sequence d'images (pour la file d'images)
+	nRet = is_CaptureVideo(hCam, IS_DONT_WAIT);
+	if(nRet != 0){ //capture l'image live
 		cout << "Camera non active - Error " << endl;
 		active = false;
-		if(rep == 140){ //Error Code : Camera already running
+		if(nRet == 140){ //Error Code : Camera already running
 			is_StopLiveVideo(hCam, IS_FORCE_VIDEO_STOP); //force l'arret de la capture
 			cout << "Camera arrete " << endl;
 			if(is_CaptureVideo(hCam, IS_DONT_WAIT) == IS_SUCCESS){ //capture l'image live

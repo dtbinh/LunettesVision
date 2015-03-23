@@ -21,8 +21,8 @@ public:
 	//// Attributs ////
 	bool active;
 	//cv::VideoCapture *videoStream;
-	char* m_pcImageMemory;
-	int   m_nMemoryId;
+	char* m_pcImageMemory1,* m_pcImageMemory2; //for sequence
+	int   m_nMemoryId1, m_nMemoryId2;
 	HIDS hCam;
 	int cameraID;
 	cv::Mat map1, map2; // matrix for camera distortion

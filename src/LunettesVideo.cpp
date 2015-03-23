@@ -64,12 +64,9 @@ LunettesVideo::LunettesVideo(void)
 			if (is_GetCameraList(pucl) == IS_SUCCESS) {
 				for (int iCamera = 0; iCamera < camList.size(); iCamera++) {
 					camList[iCamera]->cameraID = pucl->uci[iCamera].dwCameraID; 
-					int	ret = is_ParameterSet(camList[iCamera]->hCam, IS_PARAMETERSET_CMD_GET_HW_PARAMETERSET_AVAILABLE, NULL, 0);
-					if(ret != IS_SUCCESS){
-						cout <<"Params EPROM non supportés par Camera no "<< camList[iCamera]->cameraID<<endl;
-					}
-					ret = is_ParameterSet(camList[iCamera]->hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0);
+					int ret = is_ParameterSet(camList[iCamera]->hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0);
 					cout << "Camera no " << camList[iCamera]->cameraID<< " - loading code (0 = OK) : " << ret << endl;
+					
 				}
 			}
 		}
@@ -172,6 +169,7 @@ void LunettesVideo::run() {
 	int frame = 0;
 	int key = 0;
 	double pParam;
+	long pIntr, pActIntr;
 	Mat finalFrame(resY, resX,CV_8UC3,Scalar(0,0,0));
 	setWindowsParams();
 
@@ -180,27 +178,16 @@ void LunettesVideo::run() {
 
 	myTimer->start();
 	cout<<"Debut Boucle Acquisition"<<endl;
-	
+	//cout <<" currentProfile->listArea.size() = " << currentProfile->listArea.size() << endl;
 	do {
 		// Benchmark stuff
-		//if(frame == 1) myTimer->start();
 		if(frame>FRAMES_COUNT && TEST_MODE) break;
 		frame ++;
-		//fps->calculate();
 
 		// Blend Areas
 		///////////////////////////////////////////
 
 		currentProfileMutex.lock();
-		if (changeExposure && !needHdr) {
-			if (!needHdr){
-				pParam = 10;
-				for (int iCamera = 0; iCamera < camList.size(); iCamera++) {
-					is_Exposure(camList[iCamera]->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &pParam, sizeof (pParam));
-				}
-			}
-		}
-		changeExposure = false;
 		for(int i = 0;i<currentProfile->listArea.size();i++) {
 			Area* r = currentProfile->listArea.at(i);
 			if(!r->hidden) {
@@ -213,9 +200,27 @@ void LunettesVideo::run() {
 					Sleep(100);
 					r->frameMutex.lock();
 				}
+				r->frameMutex.unlock();
+
+				if (changeExposure){
+					if (!needHdr) {
+						pParam = 10;					
+						INT nMask = 0;
+						is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask)); //Stop Sequence HDR
+						is_Exposure(r->camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &pParam, sizeof (pParam));
+					}
+					else{
+						initSequenceAOI(r);
+						//is_AddToSequence(r->camera->hCam, r->camera->m_pcImageMemory, r->camera->m_nMemoryId);
+						//is_InitImageQueue (r->camera->hCam, 0);
+					}	
+				}
+				r->frameMutex.lock();
+				
 				// Blend !
 				if(r->type == Area::CAMERA) {
 					//Copy in the DisplayRect on finale frame
+					imwrite("finaleframe.png", finalFrame(r->getDisplayRect()));
 					r->currentFrame.download(finalFrame(r->getDisplayRect()));
 				} else {
 					cv::rectangle(finalFrame,r->displayZone,r->color,cv::FILLED);
@@ -225,7 +230,7 @@ void LunettesVideo::run() {
 				r->frameMutex.unlock();
 			}
 		}
-
+		changeExposure = false;
 		// On Screen Display features
 		///////////////////////////////////////////
 		osd->blendOSD(finalFrame);
@@ -245,8 +250,6 @@ void LunettesVideo::run() {
 		key = waitKey(1);
 		myTimer->changeState(MyTimer::OTHER);
 		osd->addInput(key);
-
-		//finalFrame = Mat::zeros(resY, resX,CV_8UC3);
 	} while (key != 'q' && key != 'Q' && !needClose);
 
 	//////////////////////////////////////////////////////////
@@ -285,6 +288,30 @@ void LunettesVideo::blendAreasZones(Mat &img)
 			rectangle(img,r->getCameraCropRect(), s2,2);
 		}
 	}
+}
+
+void LunettesVideo::initSequenceAOI(Area *r){
+	INT nMask = 0;
+	
+	//Parameters Initialization
+	AOI_SEQUENCE_PARAMS Param;
+	
+	// Set parameters of AOI 1
+	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_1;
+	Param.s32NumberOfCycleRepetitions = 1;
+	Param.s32X = 0;
+	Param.s32Y = 0;
+	Param.dblExposure = 12;
+	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
+	INT nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	
+	
+	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_2;
+	Param.dblExposure = 8;
+	nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	
+	nMask = IS_AOI_SEQUENCE_INDEX_AOI_1 | IS_AOI_SEQUENCE_INDEX_AOI_2;
+	nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask));	
 }
 
 void LunettesVideo::selectNextArea()

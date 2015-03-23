@@ -1,6 +1,4 @@
 #include "Area.h"
-#include "opencv2/cudawarping.hpp"
-#include "opencv2/photo/photo.hpp"
 
 //////////////////////////////////////////////////////////////////////////////
 /// CONSTRUCTEUR - DESTRUCTEUR
@@ -32,73 +30,60 @@ Area::~Area(void)
 //////////////////////////////////////////////////////////////////////////////
 
 
-Mat HDR(std::vector<cv::Mat>& images, std::vector<float>& times){
+Mat Area::HDR(std::vector<cv::Mat>& images, std::vector<double>& times){
 
 	Mat response;
-	cout<<"nb d'images = "<<images.size()<<endl;
-	cout<<"nb de temps = "<<times.size()<<endl;
-	
-    Ptr<cv::CalibrateDebevec> calibrate = createCalibrateDebevec();
-    cout <<"create calibrate" <<endl;
+	imwrite("image1.png", images[0]);
+	imwrite("image2.png", images[1]);
     calibrate->process(images, response, times);
 	cout <<"done calibrate" <<endl;
 	Mat hdr;
-    Ptr<MergeDebevec> merge_debevec = createMergeDebevec();
-    cout <<"create merge" <<endl;
     merge_debevec->process(images, hdr, times, response);
     cout <<"done merge" <<endl;
 
-    /*cv::cuda::GpuMat ldr;
-    Ptr<TonemapDurand> tonemap = createTonemapDurand(2.2f);
-    tonemap->process(hdr, ldr);*/
-
-	return hdr;
-   // imwrite("ldr.png", ldr * 255);
-   // imwrite("hdr.hdr", hdr);
-	
+    cv::Mat ldr;
+    
+    tonemap->process(hdr, ldr);
+	//imwrite("hdr.hdr", hdr);
+	ldr = ldr * 255;
+	imwrite("ldr.png", ldr);
+	return ldr;
+ 
 }
 
 // Remapthreadfunction without FPS computation (faster, no lag)
 void remapThreadFunction(Area* r) 
 {
-	cv::cuda::GpuMat srcGpu;
-	cv::Mat src;
-	std::vector<cv::Mat> listeMat;
-	while(!r->needClose) {
-		
-		if(r->needHdr){
-			if (r->imagesHdr.empty()){
-				r->pParam = 20;
-			}else{
-				r->pParam = 5;
-			}
-			r->timesExpo.push_back(r->pParam);
-			
-			is_Exposure(r->camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &r->pParam, sizeof (r->pParam));
-			// Get frame from camera
-			// Upload it on the GPU
-			//srcGpu.upload(r->getCamFrame());
-			//r->imagesHdr.push_back(srcGpu);
-			
-			//test ac Mat
-			src=(r->getCamFrame());
-			listeMat.push_back(src);
-			
-			//verifier les deux frames
-			
-			if(r->imagesHdr.size() > 1){ //on a enregistrés 2 images
-				r->matrixMutex.lock();
-				//srcGpu.upload(HDR(r->imagesHdr, r->timesExpo));
-				srcGpu.upload(HDR(listeMat, r->timesExpo));
-				listeMat.clear();
-				r->timesExpo.clear();
-				r->matrixMutex.unlock();
-			}
-			else
-				continue; //on recommence à capturer l'image sans envoyer le résultat immédiat.
-		}else{
-			srcGpu.upload(r->getCamFrame());
+	is_InitImageQueue (r->camera->hCam, 0);
+	INT nMemID = 0;
+	char *pBuffer = NULL;
+	
+	while (IS_SUCCESS == is_WaitForNextImage(r->camera->hCam, 1000, &pBuffer, &nMemID))
+	{
+		cv::cuda::GpuMat srcGpu = (r->getCamFrame(pBuffer));
+
+		// Create the output GpuMat
+		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
+				
+		if(r->needRemap && r->matrix!=NULL) {
+			r->matrixMutex.lock();
+			cv::cuda::remap(srcGpu,dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),cv::INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
+			r->matrixMutex.unlock();
+		} else {
+			cv::cuda::resize(srcGpu,dstGpu,r->getDisplaySize());
 		}
+		// Copy the output frame on the shared memory with the main thread
+		//r->frameMutex.lock();
+		dstGpu.copyTo((r->currentFrame));
+		//r->frameMutex.unlock();
+		is_UnlockSeqBuf (r->camera->hCam, nMemID, pBuffer);
+	}	
+	is_ExitImageQueue (r->camera->hCam);
+
+	/*while(!r->needClose) {
+
+		cv::cuda::GpuMat srcGpu = (r->getCamFrame());
+
 		// Create the output GpuMat
 		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
 				
@@ -113,7 +98,8 @@ void remapThreadFunction(Area* r)
 		r->frameMutex.lock();
 		dstGpu.copyTo((r->currentFrame));
 		r->frameMutex.unlock();
-	}
+	}*/
+	is_ExitCamera(r->camera->hCam);
 }
 
 
@@ -122,6 +108,10 @@ void Area::startThread()
 	// If the area is a color area, we dont need a thread !
 	if(type == CAMERA) {
 		needClose = false;
+		/*calibrate =  createCalibrateRobertson();
+		merge_debevec = createMergeDebevec();
+		tonemap = createTonemap();
+		cout <<"create calibrate and merge ptrs" <<endl;*/
 		currentFrame.create(camera->getSize().height,camera->getSize().width,CV_8UC3);
 		invalidate();	// If needed, compute the remap matrix
 		remapThread = std::thread(remapThreadFunction, this);
@@ -244,17 +234,23 @@ cv::Rect& Area::getRect(AreaType t)
 	}
 }
 
-cv::Mat Area::getCamFrame()
+cv::cuda::GpuMat  Area::getCamFrame(char * pBuffer)
 {
 	/*cv::Mat frame;
 	do {
 		camera->videoStream->retrieve(frame);
 		
 	} while(frame.empty());*/
-
-	cv::Mat frame(1200,1600,CV_8UC3,camera->m_pcImageMemory,1600*3);
-	if(needCrop) return frame(cameraROI);
-	else return frame;
+	cv::Mat frame(1200,1600,CV_8UC3,pBuffer, 1600*4); // last param = number of bytes by cols
+	//cv::cuda::GpuMat  frameGpu(1200,1600,CV_8UC3,camera->m_pcImageMemory, 1600*3);
+	cv::cuda::GpuMat frameGpu;
+	frameGpu.upload(frame);
+	if(needCrop) {
+		cv::cuda::GpuMat frameRect(frameGpu, cameraROI);
+		return frameRect;
+	}
+	else 
+		return frameGpu;
 }
 
 int Area::getWidth(AreaType t)

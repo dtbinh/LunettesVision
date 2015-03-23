@@ -4,6 +4,8 @@
 #include "Camera.h"
 #include <mutex>
 #include "MyTimer.h"
+#include "opencv2/photo/photo.hpp"
+#include "opencv2/cudawarping.hpp"
 
 class Area
 {
@@ -16,8 +18,15 @@ public:
 	double zoom;		// For remap
 	cv::Scalar color;	//If this Area is a color Area
 	Type type;			// Camera or color ?
+	
+	//For HDR 
 	std::vector<cv::cuda::GpuMat> imagesHdr; 
-	std::vector<float> timesExpo;
+	std::vector<double> timesExpo;
+	cv::Ptr<cv::CalibrateRobertson> calibrate;
+	cv::Ptr<cv::MergeDebevec> merge_debevec;
+	cv::Ptr<cv::Tonemap> tonemap;
+	
+	
 	Matrix* matrix;			// Remap matrix
 	cv::Rect displayZone;	
 	cv::Rect cameraROI;		
@@ -52,10 +61,12 @@ public:
 	cv::Rect getDisplayRect();
 	cv::Rect getCameraCropRect();
 	cv::Rect getCentralZoneRect();
-	cv::Mat getCamFrame();
+	cv::cuda::GpuMat  getCamFrame(char * pBuffer);
+	cv::cuda::GpuMat  getCamFrame();
 	cv::Rect& getRect(AreaType t);
 	void HideAndShow();
-
+	
+	cv::Mat HDR(std::vector<cv::Mat>& images, std::vector<double>& times);
 
 	int getWidth(AreaType t);
 	int getHeight(AreaType t);
