@@ -15,6 +15,7 @@ public:
 	enum AreaType {DISPLAY_ZONE, REMAP_ZONE, CROP_ZONE};
 
 	int camIndex;
+	Camera* camera;		//If this Area is a camera Area
 	double zoom;		// For remap
 	cv::Scalar color;	//If this Area is a color Area
 	Type type;			// Camera or color ?
@@ -36,7 +37,7 @@ public:
 
 	//cv::Mat currentFrame;	// Shared frame with the main thread
 	cv::cuda::GpuMat currentFrame;
-	Camera* camera;
+	
 	double pParam;
 	std::thread remapThread;
 	std::mutex frameMutex;

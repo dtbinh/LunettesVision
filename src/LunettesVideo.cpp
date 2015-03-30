@@ -37,40 +37,17 @@ LunettesVideo::LunettesVideo(void)
 	cameraCount = 1;
 	resX = WIDTH;
 	resY = HEIGHT;
-	//TEST
-	int num;
-	is_GetNumberOfCameras( &num );
-	cout << "Nombre de cameras = " << num << endl;
-	//TEST
-	initProfilCameras();
 	
-	if(!switchProfile(0)) {
-		cout << "Fin du Programme" <<endl;
-		return;
-	}
-
-	// Connexion to IDS camera
-	// Sample from IDS documentation
-	// http://www.prolinx.co.jp/supplier/IDS/uEye_Manual_En/index.html?is_getcameralist.html
-	///////////////////////////////////////////////////////////////////////////////////////////
-
 	INT nNumCam;
 	if( is_GetNumberOfCameras( &nNumCam ) == IS_SUCCESS) {
 		if( nNumCam >= 1 ) {
+			cout << "Nombre de cameras = " << nNumCam << endl;
 			// Initialize list with suitable size
 			pucl = (UEYE_CAMERA_LIST*) new BYTE [sizeof (DWORD) + nNumCam * sizeof (UEYE_CAMERA_INFO)];
 			pucl->dwCount = nNumCam;
-			//Retrieve camera info
-			if (is_GetCameraList(pucl) == IS_SUCCESS) {
-				for (int iCamera = 0; iCamera < camList.size(); iCamera++) {
-					camList[iCamera]->cameraID = pucl->uci[iCamera].dwCameraID; 
-					int ret = is_ParameterSet(camList[iCamera]->hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0);
-					cout << "Camera no " << camList[iCamera]->cameraID<< " - loading code (0 = OK) : " << ret << endl;
-					
-				}
-			}
 		}
 	}
+	initProfilCameras();
 	initialized = true;
 }
 
@@ -92,12 +69,13 @@ bool LunettesVideo::initProfilCameras()
 	bool errorLoadingCameras = false;
 	std::vector<int> camIds;
 	int camIndex;
-
-	///// Parcours des profiles /////
-	for(int p=0; p<profiles.size() ;p++)
+	cout <<"taille liste de profil = "<<profiles.size()<<endl;
+	///// Parcours des profiles /////       //A quoi ça sert si on ne demande de base qu'un seul profil ???
+	/*for(int p=0; p<profiles.size() ;p++)  
 	{
 		///// Parcours des Aires /////
 		std::vector<Area*> areas = profiles.at(p)->listArea;
+		cout <<"passage dans le profil "<<p<<endl;
 		for(int a=0; a<areas.size() ;a++)
 		{
 			int camIndex = areas.at(a)->camIndex;
@@ -118,11 +96,49 @@ bool LunettesVideo::initProfilCameras()
 
 				if(!camList.at(camIndex)->active)
 					errorLoadingCameras = true;
-				areas.at(a)->camera = camList.at(areas.at(a)->camIndex);
+				areas.at(a)->camera = camList.at(areas.at(a)->camIndex); //attribution de la camera	à une area
 			}
 		}
-	}
+	}*/
+	//Version Aurélien : tout l'initialisation de la caméra dans une seule fonction
+	///// Parcours des Aires du Profil/////
+	std::vector<Area*> areas = profiles.at(currentProfileIndex)->listArea;
+	for(int a=0; a<areas.size() ;a++)
+	{
+		int camIndex = areas.at(a)->camIndex;
+		if(camIndex != -1) {
+			if(camList.find(camIndex) == camList.end()) {
+				///// On a trouvé une caméra non initialisée /////
+				cout << "Camera " << camIndex << " : ";
+				camIds.push_back(camIndex);
 
+				camList[camIndex] = new Camera(camIndex);
+
+				if(camList.at(camIndex)->active == true){					 
+					cout << "OK" << endl;
+				}
+				else 
+					cout << "ERROR" << endl;
+			}
+
+			if(!camList.at(camIndex)->active)
+				errorLoadingCameras = true;
+				
+			// Connexion to IDS camera
+			// Sample from IDS documentation
+			// http://www.prolinx.co.jp/supplier/IDS/uEye_Manual_En/index.html?is_getcameralist.html
+			///////////////////////////////////////////////////////////////////////////////////////////	
+			if (is_GetCameraList(pucl) == IS_SUCCESS) {
+				
+					camList[camIndex]->cameraID = pucl->uci[camIndex].dwCameraID; 
+					int ret = is_ParameterSet(camList[camIndex]->hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0);
+					cout << "Camera no " << camList[camIndex]->cameraID<< " - loading code (0 = OK) : " << ret << endl;
+					cout <<"HIDS de la camera = "<<camList[camIndex]->hCam<<endl;
+				
+			}
+			areas.at(a)->camera = camList.at(camIndex); //attribution de la camera	à une area
+		}
+	}
 	return !errorLoadingCameras;
 }
 
@@ -160,12 +176,12 @@ void LunettesVideo::stopRemapThreads()
 
 void LunettesVideo::run() {
 	///// DISPLAY THREAD /////
-
+	
 	if(!initialized) return;
 	cout << "------------ Video running ! ------------" << endl;
 
 	///// INIT /////
-
+	
 	int frame = 0;
 	int key = 0;
 	double pParam;
@@ -173,62 +189,64 @@ void LunettesVideo::run() {
 	Mat finalFrame(resY, resX,CV_8UC3,Scalar(0,0,0));
 	setWindowsParams();
 
+	if(!switchProfile(currentProfileIndex)) {
+		cout << "Fin du Programme" <<endl;
+		return;
+	}
 	/// START LOOP ///
 	//////////////////////////////////////////////////////////
 
 	myTimer->start();
 	cout<<"Debut Boucle Acquisition"<<endl;
 	//cout <<" currentProfile->listArea.size() = " << currentProfile->listArea.size() << endl;
+	Sleep(30000); ////////////////////artifice, à changer ////////////////
 	do {
 		// Benchmark stuff
 		if(frame>FRAMES_COUNT && TEST_MODE) break;
 		frame ++;
-
+		
 		// Blend Areas
 		///////////////////////////////////////////
-
+		
 		currentProfileMutex.lock();
 		for(int i = 0;i<currentProfile->listArea.size();i++) {
 			Area* r = currentProfile->listArea.at(i);
 			if(!r->hidden) {
 				// Need the read access
-				r->frameMutex.lock();
 
 				// Wait for a frame (at the beginning)
 				while(r->currentFrame.empty() && r->type == Area::CAMERA) {
-					r->frameMutex.unlock();
+					cout<<"useless"<<endl;
 					Sleep(100);
-					r->frameMutex.lock();
-				}
-				r->frameMutex.unlock();
-
+				}				
 				if (changeExposure){
 					if (!needHdr) {
 						pParam = 10;					
 						INT nMask = 0;
 						is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask)); //Stop Sequence HDR
 						is_Exposure(r->camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &pParam, sizeof (pParam));
+						int nMode = IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_ROLLING;
+						is_DeviceFeature(r->camera->hCam, IS_DEVICE_FEATURE_CMD_GET_SHUTTER_MODE, (void*) &nMode, sizeof(nMode));
 					}
-					else{
+					else{	
 						initSequenceAOI(r);
-						//is_AddToSequence(r->camera->hCam, r->camera->m_pcImageMemory, r->camera->m_nMemoryId);
-						//is_InitImageQueue (r->camera->hCam, 0);
 					}	
 				}
 				r->frameMutex.lock();
-				
 				// Blend !
 				if(r->type == Area::CAMERA) {
 					//Copy in the DisplayRect on finale frame
-					imwrite("finaleframe.png", finalFrame(r->getDisplayRect()));
+					//cout<<"jusqu'ici"<<endl;
+					
 					r->currentFrame.download(finalFrame(r->getDisplayRect()));
 				} else {
 					cv::rectangle(finalFrame,r->displayZone,r->color,cv::FILLED);
 				}
-
+				
 				// Unlock the mutex
 				r->frameMutex.unlock();
 			}
+			
 		}
 		changeExposure = false;
 		// On Screen Display features
@@ -236,16 +254,19 @@ void LunettesVideo::run() {
 		osd->blendOSD(finalFrame);
 		if(osd->isDisplay()) 
 			blendAreasZones(finalFrame);
-		
+		std::ostringstream oss117;
+		oss117<<frame;
 		//indicateur HDR
-		if(needHdr)
+		if(needHdr){
 				cv::putText(finalFrame,"HDR On", cv::Point(resX-150,50),1,2,cv::Scalar(0,255,0),2);
-		else
+				//imwrite("results/image"+oss117.str()+".png", finalFrame);
+		}else{
 				cv::putText(finalFrame,"HDR Off", cv::Point(resX-150,50),1,2,cv::Scalar(0,0,255),2);
-		
+		}
 		currentProfileMutex.unlock();
 		imshow("camera",finalFrame);
 		// Refresh screen !
+		//finalFrame.zeros(resY, resX,CV_8UC3);
 		myTimer->changeState(MyTimer::USER_INPUT);
 		key = waitKey(1);
 		myTimer->changeState(MyTimer::OTHER);
@@ -291,6 +312,7 @@ void LunettesVideo::blendAreasZones(Mat &img)
 }
 
 void LunettesVideo::initSequenceAOI(Area *r){
+	
 	INT nMask = 0;
 	
 	//Parameters Initialization
@@ -301,17 +323,23 @@ void LunettesVideo::initSequenceAOI(Area *r){
 	Param.s32NumberOfCycleRepetitions = 1;
 	Param.s32X = 0;
 	Param.s32Y = 0;
-	Param.dblExposure = 12;
+	Param.dblExposure = 8;
 	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
-	INT nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
 	
 	
 	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_2;
-	Param.dblExposure = 8;
-	nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	Param.s32NumberOfCycleRepetitions = 1;
+	Param.dblExposure = 12;
+	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
+	is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
 	
-	nMask = IS_AOI_SEQUENCE_INDEX_AOI_1 | IS_AOI_SEQUENCE_INDEX_AOI_2;
-	nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask));	
+	nMask = IS_AOI_SEQUENCE_INDEX_AOI_1 |
+                IS_AOI_SEQUENCE_INDEX_AOI_2;
+
+    // enable sequence mode
+    is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask));
+	
 }
 
 void LunettesVideo::selectNextArea()
@@ -378,6 +406,7 @@ void LunettesVideo::exit()
 //////////////////////////////////////////////////////////////////////////////
 
 bool LunettesVideo::switchProfile(int i) {
+	cout<<"indexProfil = "<<i<<endl;
 	if(currentProfileIndex + i >= 0 && currentProfileIndex + i < profiles.size())
 	{
 		if(!isCameraAviable(profiles[currentProfileIndex+i])) {
@@ -388,11 +417,12 @@ bool LunettesVideo::switchProfile(int i) {
 		std::cout << "####### SWITCH PROFILE #######" << endl;
 
 		currentProfileMutex.lock();
-		if(currentProfile != NULL) stopRemapThreads();
-
+		if(currentProfile != NULL){
+			 stopRemapThreads();
+		}
 		currentProfileIndex += i;
 		currentProfile = profiles[currentProfileIndex];
-		startRemapThreads();
+		startRemapThreads();          
 		currentProfileMutex.unlock();
 		return true;
 	}

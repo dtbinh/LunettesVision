@@ -52,16 +52,47 @@ Mat Area::HDR(std::vector<cv::Mat>& images, std::vector<double>& times){
 }
 
 // Remapthreadfunction without FPS computation (faster, no lag)
-void remapThreadFunction(Area* r) 
-{
-	is_InitImageQueue (r->camera->hCam, 0);
+void remapThreadFunction(Area* r){
+	cv::cuda::GpuMat srcGpu;
 	INT nMemID = 0;
 	char *pBuffer = NULL;
+	//Avec sequence
+	int nRet, count = 0;
 	
-	while (IS_SUCCESS == is_WaitForNextImage(r->camera->hCam, 1000, &pBuffer, &nMemID))
-	{
-		cv::cuda::GpuMat srcGpu = (r->getCamFrame(pBuffer));
-
+	//cout<<"code error = " <<nRet<<endl;
+	/*while(IS_SUCCESS == ( nRet = is_WaitForNextImage(r->camera->hCam, 2000, &pBuffer, &nMemID) ) ) {
+			r->frameMutex.lock();
+			srcGpu = (r->getCamFrame(pBuffer));
+			nRet = is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, pBuffer);
+			cout <<"Delock "<<r->camera->hCam<<endl;
+			count ++;
+			// Create the output GpuMat
+			cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
+					
+			if(r->needRemap && r->matrix!=NULL) {
+				r->matrixMutex.lock();
+				cv::cuda::remap(srcGpu,dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),cv::INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
+				r->matrixMutex.unlock();
+			} else {
+				cv::cuda::resize(srcGpu,dstGpu,r->getDisplaySize());
+			}
+			// Copy the output frame on the shared memory with the main thread
+			
+			dstGpu.copyTo((r->currentFrame));
+			r->frameMutex.unlock();
+	}
+	//nRet = is_WaitForNextImage(r->camera->hCam, 2000, &pBuffer, &nMemID);
+	cout<<"je suis sorti "<< r->camera->hCam<<" avec "<<count<<" itérations et code erreur = "<<nRet <<endl;
+	is_ExitImageQueue(r->camera->hCam);
+	is_ClearSequence(r->camera->hCam);
+	*/
+	//Sans sequence
+	while(!r->needClose) {
+		
+		//nRet = is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
+		srcGpu = (r->getCamFrame());
+		//nRet = is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
+		//cout <<"Delock "<<r->camera->hCam<<endl;
 		// Create the output GpuMat
 		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
 				
@@ -73,33 +104,12 @@ void remapThreadFunction(Area* r)
 			cv::cuda::resize(srcGpu,dstGpu,r->getDisplaySize());
 		}
 		// Copy the output frame on the shared memory with the main thread
-		//r->frameMutex.lock();
+		//r->frameMutex.lock();S
 		dstGpu.copyTo((r->currentFrame));
 		//r->frameMutex.unlock();
-		is_UnlockSeqBuf (r->camera->hCam, nMemID, pBuffer);
-	}	
-	is_ExitImageQueue (r->camera->hCam);
-
-	/*while(!r->needClose) {
-
-		cv::cuda::GpuMat srcGpu = (r->getCamFrame());
-
-		// Create the output GpuMat
-		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
-				
-		if(r->needRemap && r->matrix!=NULL) {
-			r->matrixMutex.lock();
-			cv::cuda::remap(srcGpu,dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),cv::INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
-			r->matrixMutex.unlock();
-		} else {
-			cv::cuda::resize(srcGpu,dstGpu,r->getDisplaySize());
-		}
-		// Copy the output frame on the shared memory with the main thread
-		r->frameMutex.lock();
-		dstGpu.copyTo((r->currentFrame));
-		r->frameMutex.unlock();
-	}*/
-	is_ExitCamera(r->camera->hCam);
+		
+	}
+	r->camera->exitCamera();
 }
 
 
@@ -115,6 +125,7 @@ void Area::startThread()
 		currentFrame.create(camera->getSize().height,camera->getSize().width,CV_8UC3);
 		invalidate();	// If needed, compute the remap matrix
 		remapThread = std::thread(remapThreadFunction, this);
+		remapThread.detach();
 	}
 }
 
@@ -241,9 +252,24 @@ cv::cuda::GpuMat  Area::getCamFrame(char * pBuffer)
 		camera->videoStream->retrieve(frame);
 		
 	} while(frame.empty());*/
-	cv::Mat frame(1200,1600,CV_8UC3,pBuffer, 1600*4); // last param = number of bytes by cols
+	cv::Mat frame(camera->height,camera->width,CV_8UC3,pBuffer, camera->width*(camera->m_bitsPerPixel/8)); // last param = number of bytes by cols
+	//cv::cuda::GpuMat  frameGpu(1200,1600,CV_8UC3,camera->m_pcImageMemory, 1600*3);
+	
+	cv::cuda::GpuMat frameGpu;
+	frameGpu.upload(frame);
+	if(needCrop) {
+		cv::cuda::GpuMat frameRect(frameGpu, cameraROI);
+		return frameRect;
+	}
+	else 
+		return frameGpu;
+}
+cv::cuda::GpuMat  Area::getCamFrame()
+{
+	cv::Mat frame(camera->height,camera->width,CV_8UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel/8)); // last param = number of bytes by cols
 	//cv::cuda::GpuMat  frameGpu(1200,1600,CV_8UC3,camera->m_pcImageMemory, 1600*3);
 	cv::cuda::GpuMat frameGpu;
+	
 	frameGpu.upload(frame);
 	if(needCrop) {
 		cv::cuda::GpuMat frameRect(frameGpu, cameraROI);

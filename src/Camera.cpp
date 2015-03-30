@@ -1,7 +1,7 @@
 #include "Camera.h"
 
 
-INT InitCamera (HIDS *hCam, HWND hWnd)
+INT initCamera (HIDS *hCam, HWND hWnd)
 {
 		
     INT nRet = is_InitCamera (hCam, hWnd);	
@@ -51,59 +51,140 @@ INT InitCamera (HIDS *hCam, HWND hWnd)
 /// CONSTRUCTEUR - DESTRUCTEUR
 //////////////////////////////////////////////////////////////////////////////
 
-Camera::Camera(int index, cv::Size camSize)
+Camera::Camera(int index)
 {
 	/////////////////////////////////////////////
-	// TEST ERIC 03/09/2014
+	// TEST AURELIEN 27/03/2014
 	/////////////////////////////////////////////
-	hCam = 0;
-	HWND    m_hwndDisp;
-	hCam = (HCAM)0;                           // open next camera
-    int nRet = InitCamera (&hCam, m_hwndDisp);    // init camera
-	nRet = is_AllocImageMem(hCam,
+
+	m_pcImageMemory = NULL;
+	m_nMemoryId = 0;
+	HWND    m_hwndDisp =0;
+	hCam = (HIDS)0;                           // open next camera
+	int desiredFrameRate = 30;
+	m_bitsPerPixel = 32;
+	
+    int nRet = initCamera (&hCam, m_hwndDisp);    // init camera
+	if (nRet == IS_SUCCESS)
+	{
+
+        // Get sensor info
+		is_GetSensorInfo(hCam, &m_sInfo);
+
+		getMaxImageSize(&width, &height);
+
+		// allocate an image memory.
+		if (is_AllocImageMem(hCam, width, height, m_bitsPerPixel, &m_pcImageMemory, &m_nMemoryId) != IS_SUCCESS)
+		{
+			cout<<"Memory allocation failed!"<<endl;
+			active = false;	
+			return ;
+		}
+		else
+		{
+			is_SetImageMem(hCam, m_pcImageMemory, m_nMemoryId);
+			// set the image size to capture
+			IS_SIZE_2D imageSize;
+			imageSize.s32Width = width;
+			imageSize.s32Height = height;
+
+			is_AOI(hCam, IS_AOI_IMAGE_SET_SIZE, (void*)&imageSize, sizeof(imageSize));
+			
+			is_CaptureVideo(hCam, IS_DONT_WAIT);
+            // check if sequence mode is available
+            INT nSequence = 0;
+            nRet = is_AOI(hCam, IS_AOI_SEQUENCE_GET_SUPPORTED, &nSequence, sizeof(nSequence));
+
+            if (nSequence ==  IS_AOI_SEQUENCE_INDEX_AOI_1)
+            {
+                cout<<"AOI sequence is not supported!"<<endl;
+                exitCamera();
+                active = false;	
+                return;
+            }
+            active = true;
+		}
+	}
+	else
+	{
+		 cout<<"No uEye camera could be opened !"<<endl;
+		 active = false;	
+		 return;
+	}
+	
+	nRet = is_SetGainBoost(hCam, IS_SET_GAINBOOST_ON);
+	cout<<"Boost = "<<nRet<<endl;
+	
+	nRet = is_SetFrameRate(hCam, desiredFrameRate, &m_actualFrameRate);
+	if (nRet != IS_SUCCESS) {
+		cout << "WARNING! Failed to set frame rate to: " << desiredFrameRate << endl;
+		cout << "Actual frame rate: " << m_actualFrameRate << endl;
+		m_numberOfFrames = m_actualFrameRate;
+	}else
+		m_numberOfFrames = desiredFrameRate;
+	
+	cout <<"FPS = " <<m_numberOfFrames	<<endl;
+	
+	
+	//Global Shutter
+	INT nSupportedFeatures;
+	if (is_DeviceFeature(hCam, IS_DEVICE_FEATURE_CMD_GET_SUPPORTED_FEATURES, (void*) &nSupportedFeatures, sizeof(nSupportedFeatures)) == IS_SUCCESS )
+	{
+		if (nSupportedFeatures & IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_GLOBAL)
+		{
+			int nMode = IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_GLOBAL;
+			nRet = is_DeviceFeature(hCam, IS_DEVICE_FEATURE_CMD_SET_SHUTTER_MODE, (void*) &nMode, sizeof(nMode));
+			cout<<"Global Shutter code retour (0 = success) = "<<nRet<<endl;
+		}
+		else
+			cout<<"Global Shutter pas supporte"<<endl;
+	}	
+	/*
+	m_nMemoryId.resize(m_numberOfFrames);
+	m_pcImageMemory.resize(m_numberOfFrames);
+	for (size_t i = 0; i < m_numberOfFrames; ++i) {
+		is_AllocImageMem (hCam, width, height, m_bitsPerPixel,&m_pcImageMemory[i], &m_nMemoryId[i]); //alloue la zone pour la sequence
+		is_SetImageMem(hCam, m_pcImageMemory[i], m_nMemoryId[i]);//active la zone mémoire
+		is_AddToSequence(hCam, m_pcImageMemory[i], m_nMemoryId[i] ); //ajoute la zone mémoire à la séquence d'imagesS
+	}
+	
+	if(is_InitImageQueue (hCam, 0)!= IS_SUCCESS) //initialise la file
+		cout<<"Pas de file "<<endl;
+	*/
+	//NO SEQUENCE
+	/*nRet = is_AllocImageMem(hCam,
                 camSize.width,
                 camSize.height,
-                32,// Nb de bits par pixel
-                &m_pcImageMemory1,
-                &m_nMemoryId1 ); //Alloue emplacement mémoire pour image
-	is_SetImageMem(hCam,m_pcImageMemory1,m_nMemoryId1); //active la zone mémoire
-	
-	//En double pour la sequence
-	nRet = is_AllocImageMem(hCam,
-                camSize.width,
-                camSize.height,
-                32,// Nb de bits par pixel
-                &m_pcImageMemory2,
-                &m_nMemoryId2 ); //Alloue emplacement mémoire pour image
-	is_SetImageMem(hCam,m_pcImageMemory2,m_nMemoryId2); //active la zone mémoire
-	
-	
+                m_bitsPerPixel,// Nb de bits par pixel
+                &m_pcImageMemory,
+                &m_nMemoryId ); //Alloue emplacement mémoire pour image
+	nRet = is_SetImageMem(hCam,m_pcImageMemory,m_nMemoryId); //active la zone mémoire
+	if(nRet != 0){
+		active = false;
+		return;
+	}
 	if(is_EnableHdr(hCam, IS_ENABLE_HDR) != IS_SUCCESS)
 		cout << "HDR uEye impossible" << endl;
-	if (is_SetGlobalShutter(hCam, IS_GET_GLOBAL_SHUTTER) == IS_SUCCESS) {
-		cout << "GlobalShutter Mode" << endl;
-		nRet = is_SetGlobalShutter(hCam, IS_SET_GLOBAL_SHUTTER_ON);
-		cout <<"code de retour = " << nRet << endl;
-	}else
-		cout << "GlobalShutter Mode non supporte" << endl;
-		
-	is_AddToSequence(hCam, m_pcImageMemory1, m_nMemoryId1 ); //prepare la sequence d'images (pour la file d'images)
-	is_AddToSequence(hCam, m_pcImageMemory2, m_nMemoryId2 ); //prepare la sequence d'images (pour la file d'images)
+;
 	nRet = is_CaptureVideo(hCam, IS_DONT_WAIT);
-	if(nRet != 0){ //capture l'image live
-		cout << "Camera non active - Error " << endl;
-		active = false;
+	cout << "Camera code (0 = IS_SUCCESS )" << nRet<<endl;
+	if(nRet != IS_SUCCESS){ //capture l'image live
+		cout << "Camera non active - Error " << nRet<<endl;
 		if(nRet == 140){ //Error Code : Camera already running
 			is_StopLiveVideo(hCam, IS_FORCE_VIDEO_STOP); //force l'arret de la capture
 			cout << "Camera arrete " << endl;
+			active = false;
 			if(is_CaptureVideo(hCam, IS_DONT_WAIT) == IS_SUCCESS){ //capture l'image live
 				cout << "Camera redemarre " << endl;
-				active = true;
+				active = true;	
 			}
 		}
-	}else 
-		active = true;
-	cout << "Frame size: " << camSize.width << " x " << camSize.height << " Status : ";
+	}else		
+		active = true;	
+	*/
+	cout << "Frame size: " << width << " x " << height << " Status : ";
+	
+	
 	//////// FIN TEST ////////////////////
 	
 	/*
@@ -121,10 +202,55 @@ Camera::Camera(int index, cv::Size camSize)
 	*/
 }
 
-Camera::~Camera(void)
+void Camera::exitCamera()
 {
-	//delete videoStream;
-	is_StopLiveVideo (hCam,IS_FORCE_VIDEO_STOP);
+	if( hCam != 0 )
+	{
+		// Stop live video
+		is_StopLiveVideo( hCam, IS_WAIT );
+		
+		// Free the allocated buffer
+		if( m_pcImageMemory != NULL )
+  			is_FreeImageMem( hCam, m_pcImageMemory, m_nMemoryId );
+        
+		m_pcImageMemory = NULL;
+		
+		// Close camera
+		is_ExitCamera( hCam );
+	}
+}
+
+void Camera::getMaxImageSize(INT *pnSizeX, INT *pnSizeY)
+{
+    // Check if the camera supports an arbitrary AOI
+    // Only the ueye xs does not support an arbitrary AOI
+    INT nAOISupported = 0;
+    BOOL bAOISupported = TRUE;
+    if (is_ImageFormat(hCam,
+                       IMGFRMT_CMD_GET_ARBITRARY_AOI_SUPPORTED, 
+                       (void*)&nAOISupported, 
+                       sizeof(nAOISupported)) == IS_SUCCESS)
+    {
+        bAOISupported = (nAOISupported != 0);
+    }
+
+    if (bAOISupported)
+    {  
+        // All other sensors
+        // Get maximum image size
+	    *pnSizeX = m_sInfo.nMaxWidth;
+	    *pnSizeY = m_sInfo.nMaxHeight;
+    }
+    else
+    {
+        // Only ueye xs
+		// Get image size of the current format
+		IS_SIZE_2D imageSize;
+		is_AOI(hCam, IS_AOI_IMAGE_GET_SIZE, (void*)&imageSize, sizeof(imageSize));
+
+		*pnSizeX = imageSize.s32Width;
+		*pnSizeY = imageSize.s32Height;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -135,8 +261,8 @@ cv::Size Camera::getSize()
 {
 //	double dWidth = videoStream->get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
 //	double dHeight = videoStream->get(CV_CAP_PROP_FRAME_HEIGHT); //get the height of frames of the  video
-	double dWidth = 1600; 
-	double dHeight = 1200;
+	double dWidth = width; 
+	double dHeight = height;
 	return cv::Size(dWidth, dHeight);
 }
 
