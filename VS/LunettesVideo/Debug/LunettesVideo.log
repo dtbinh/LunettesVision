@@ -1,0 +1,63 @@
+﻿La génération a démarré 23/07/2014 17:51:34.
+     1>Projet "D:\LunettesVideo\LunettesVideo\LunettesVideo.vcxproj" sur le nœud 3 (Build cible(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /ID:\LunettesVideo\/include /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt Area.cpp Camera.cpp LunettesVideo.cpp Matrix.cpp MyTimer.cpp OSD.cpp Profile.cpp main.cpp
+         MyTimer.cpp
+     1>d:\lunettesvideo\lunettesvideo\mytimer.cpp(9): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : voir la déclaration de 'sprintf'
+         LunettesVideo.cpp
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(92): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(96): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(89): warning C4101: 'camIndex' : variable locale non référencée
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(136): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(143): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(181): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(246): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(266): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(283): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(290): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(302): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(319): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(344): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(372): warning C4018: '<' : incompatibilité signed/unsigned
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(419): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : voir la déclaration de 'sprintf'
+     1>d:\lunettesvideo\lunettesvideo\lunettesvideo.cpp(601): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+                 c:\program files (x86)\microsoft visual studio 11.0\vc\include\stdio.h(357) : voir la déclaration de 'sprintf'
+         Camera.cpp
+     1>d:\lunettesvideo\lunettesvideo\camera.cpp(35): warning C4244: 'argument' : conversion de 'double' en 'int', perte possible de données
+         Area.cpp
+     1>d:\lunettesvideo\lunettesvideo\area.cpp(172): warning C4244: '+=' : conversion de 'double' en 'int', perte possible de données
+     1>d:\lunettesvideo\lunettesvideo\area.cpp(173): warning C4244: '+=' : conversion de 'double' en 'int', perte possible de données
+     1>d:\lunettesvideo\lunettesvideo\area.cpp(174): warning C4244: '*=' : conversion de 'double' en 'int', perte possible de données
+     1>d:\lunettesvideo\lunettesvideo\area.cpp(175): warning C4244: '*=' : conversion de 'double' en 'int', perte possible de données
+         Génération de code en cours...
+         Compilation en cours...
+         main.cpp
+     1>d:\lunettesvideo\lunettesvideo\main.cpp(36): warning C4101: 'resX' : variable locale non référencée
+     1>d:\lunettesvideo\lunettesvideo\main.cpp(36): warning C4101: 'resY' : variable locale non référencée
+         Profile.cpp
+         OSD.cpp
+     1>d:\lunettesvideo\lunettesvideo\osd.cpp(85): warning C4018: '<' : incompatibilité signed/unsigned
+         Génération de code en cours...
+         Ignoré... (aucune modification pertinente détectée)
+         Matrix.cpp
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\LunettesVideo\Debug\LunettesVideo.exe" /INCREMENTAL /NOLOGO /LIBPATH:D:\LunettesVideo\/lib/uEye /LIBPATH:D:\LunettesVideo\/lib/OpenCV opencv_core249d.lib opencv_features2d249d.lib opencv_nonfree249d.lib opencv_flann249d.lib opencv_gpu249d.lib opencv_highgui249d.lib opencv_imgproc249d.lib opencv_objdetect249d.lib opencv_calib3d249d.lib uEye_api_64.lib uEye_api.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\LunettesVideo\Debug\LunettesVideo.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\LunettesVideo\Debug\LunettesVideo.lib" /MACHINE:X86 Debug\Area.obj
+         Debug\Camera.obj
+         Debug\FPS.obj
+         Debug\Function.obj
+         Debug\LunettesVideo.obj
+         Debug\main.obj
+         Debug\Matrix.obj
+         Debug\MyTimer.obj
+         Debug\OSD.obj
+         Debug\OsdNode.obj
+         Debug\Profile.obj
+         Debug\tinyxml2.obj
+     1>opencv_core249d.lib(opencv_core249d.dll) : fatal error LNK1112: type d'ordinateur module 'x64' en conflit avec le type d'ordinateur cible 'X86'
+     1>Génération du projet "D:\LunettesVideo\LunettesVideo\LunettesVideo.vcxproj" terminée (Build cible(s)) -- ÉCHEC.
+
+ÉCHEC de la build.
+
+Temps écoulé 00:00:10.03
