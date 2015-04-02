@@ -23,10 +23,8 @@ public:
 	bool active;
 	SENSORINFO m_sInfo;
 	
-	//NO SEQUENCE
 	int	m_nMemoryId; // camera memory -  ID
 	char* m_pcImageMemory; // camera memory - pointer to memory
-
 	
 	//// Prototypes ////
 	Camera(int index);
@@ -35,12 +33,7 @@ public:
 	void getMaxImageSize(INT *pnSizeX, INT *pnSizeY);
 	cv::Size getSize();
 	void loadDistortionMatrix();
-	
-	//SEQUENCE
-	//std::vector<int>	m_nMemoryId; // camera memory - buffer ID
-	//std::vector<char*> m_pcImageMemory; // camera memory - pointer to buffer
-	
-	
+
 	cv::Mat map1, map2; // matrix for camera distortion
 };
 

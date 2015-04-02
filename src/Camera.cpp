@@ -54,7 +54,7 @@ INT initCamera (HIDS *hCam, HWND hWnd)
 Camera::Camera(int index)
 {
 	/////////////////////////////////////////////
-	// TEST AURELIEN 27/03/2014
+	// CODE AURELIEN 27/03/2014
 	/////////////////////////////////////////////
 
 	m_pcImageMemory = NULL;
@@ -67,12 +67,9 @@ Camera::Camera(int index)
     int nRet = initCamera (&hCam, m_hwndDisp);    // init camera
 	if (nRet == IS_SUCCESS)
 	{
-
         // Get sensor info
 		is_GetSensorInfo(hCam, &m_sInfo);
-
 		getMaxImageSize(&width, &height);
-
 		// allocate an image memory.
 		if (is_AllocImageMem(hCam, width, height, m_bitsPerPixel, &m_pcImageMemory, &m_nMemoryId) != IS_SUCCESS)
 		{
@@ -88,8 +85,7 @@ Camera::Camera(int index)
 			imageSize.s32Width = width;
 			imageSize.s32Height = height;
 
-			is_AOI(hCam, IS_AOI_IMAGE_SET_SIZE, (void*)&imageSize, sizeof(imageSize));
-			
+			is_AOI(hCam, IS_AOI_IMAGE_SET_SIZE, (void*)&imageSize, sizeof(imageSize));	
 			is_CaptureVideo(hCam, IS_DONT_WAIT);
             // check if sequence mode is available
             INT nSequence = 0;
@@ -114,7 +110,7 @@ Camera::Camera(int index)
 	
 	nRet = is_SetGainBoost(hCam, IS_SET_GAINBOOST_ON);
 	cout<<"Boost = "<<nRet<<endl;
-	
+	//Set FrameRate
 	nRet = is_SetFrameRate(hCam, desiredFrameRate, &m_actualFrameRate);
 	if (nRet != IS_SUCCESS) {
 		cout << "WARNING! Failed to set frame rate to: " << desiredFrameRate << endl;
@@ -124,7 +120,6 @@ Camera::Camera(int index)
 		m_numberOfFrames = desiredFrameRate;
 	
 	cout <<"FPS = " <<m_numberOfFrames	<<endl;
-	
 	
 	//Global Shutter
 	INT nSupportedFeatures;
@@ -139,83 +134,18 @@ Camera::Camera(int index)
 		else
 			cout<<"Global Shutter pas supporte"<<endl;
 	}	
-	/*
-	m_nMemoryId.resize(m_numberOfFrames);
-	m_pcImageMemory.resize(m_numberOfFrames);
-	for (size_t i = 0; i < m_numberOfFrames; ++i) {
-		is_AllocImageMem (hCam, width, height, m_bitsPerPixel,&m_pcImageMemory[i], &m_nMemoryId[i]); //alloue la zone pour la sequence
-		is_SetImageMem(hCam, m_pcImageMemory[i], m_nMemoryId[i]);//active la zone mémoire
-		is_AddToSequence(hCam, m_pcImageMemory[i], m_nMemoryId[i] ); //ajoute la zone mémoire à la séquence d'imagesS
-	}
-	
-	if(is_InitImageQueue (hCam, 0)!= IS_SUCCESS) //initialise la file
-		cout<<"Pas de file "<<endl;
-	*/
-	//NO SEQUENCE
-	/*nRet = is_AllocImageMem(hCam,
-                camSize.width,
-                camSize.height,
-                m_bitsPerPixel,// Nb de bits par pixel
-                &m_pcImageMemory,
-                &m_nMemoryId ); //Alloue emplacement mémoire pour image
-	nRet = is_SetImageMem(hCam,m_pcImageMemory,m_nMemoryId); //active la zone mémoire
-	if(nRet != 0){
-		active = false;
-		return;
-	}
-	if(is_EnableHdr(hCam, IS_ENABLE_HDR) != IS_SUCCESS)
-		cout << "HDR uEye impossible" << endl;
-;
-	nRet = is_CaptureVideo(hCam, IS_DONT_WAIT);
-	cout << "Camera code (0 = IS_SUCCESS )" << nRet<<endl;
-	if(nRet != IS_SUCCESS){ //capture l'image live
-		cout << "Camera non active - Error " << nRet<<endl;
-		if(nRet == 140){ //Error Code : Camera already running
-			is_StopLiveVideo(hCam, IS_FORCE_VIDEO_STOP); //force l'arret de la capture
-			cout << "Camera arrete " << endl;
-			active = false;
-			if(is_CaptureVideo(hCam, IS_DONT_WAIT) == IS_SUCCESS){ //capture l'image live
-				cout << "Camera redemarre " << endl;
-				active = true;	
-			}
-		}
-	}else		
-		active = true;	
-	*/
 	cout << "Frame size: " << width << " x " << height << " Status : ";
-	
-	
-	//////// FIN TEST ////////////////////
-	
-	/*
-	videoStream = new cv::VideoCapture(index);
-	if(!videoStream->isOpened()) { active = false; return; }
-	else active = true;
-
-	videoStream->set(CV_CAP_PROP_FRAME_WIDTH,camSize.width);
-	videoStream->set(CV_CAP_PROP_FRAME_HEIGHT,camSize.height);
-	videoStream->set(CV_CAP_PROP_FPS,60);
-
-	double dWidth = videoStream->get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
-	double dHeight = videoStream->get(CV_CAP_PROP_FRAME_HEIGHT); //get the height of frames of the  video
-	cout << "Frame size: " << dWidth << " x " << dHeight << " Status : ";
-	*/
 }
 
 void Camera::exitCamera()
 {
 	if( hCam != 0 )
 	{
-		// Stop live video
 		is_StopLiveVideo( hCam, IS_WAIT );
-		
-		// Free the allocated buffer
 		if( m_pcImageMemory != NULL )
   			is_FreeImageMem( hCam, m_pcImageMemory, m_nMemoryId );
         
 		m_pcImageMemory = NULL;
-		
-		// Close camera
 		is_ExitCamera( hCam );
 	}
 }
@@ -226,13 +156,8 @@ void Camera::getMaxImageSize(INT *pnSizeX, INT *pnSizeY)
     // Only the ueye xs does not support an arbitrary AOI
     INT nAOISupported = 0;
     BOOL bAOISupported = TRUE;
-    if (is_ImageFormat(hCam,
-                       IMGFRMT_CMD_GET_ARBITRARY_AOI_SUPPORTED, 
-                       (void*)&nAOISupported, 
-                       sizeof(nAOISupported)) == IS_SUCCESS)
-    {
+    if (is_ImageFormat(hCam, IMGFRMT_CMD_GET_ARBITRARY_AOI_SUPPORTED, (void*)&nAOISupported, sizeof(nAOISupported)) == IS_SUCCESS)
         bAOISupported = (nAOISupported != 0);
-    }
 
     if (bAOISupported)
     {  
@@ -259,8 +184,6 @@ void Camera::getMaxImageSize(INT *pnSizeX, INT *pnSizeY)
 
 cv::Size Camera::getSize()
 {
-//	double dWidth = videoStream->get(CV_CAP_PROP_FRAME_WIDTH); //get the width of frames of the video
-//	double dHeight = videoStream->get(CV_CAP_PROP_FRAME_HEIGHT); //get the height of frames of the  video
 	double dWidth = width; 
 	double dHeight = height;
 	return cv::Size(dWidth, dHeight);
@@ -269,5 +192,4 @@ cv::Size Camera::getSize()
 void Camera::loadDistortionMatrix()
 {
 	cv::FileStorage fs("calibrationProperties", cv::FileStorage::READ);
-	// Load matrices with the corresponding camera Id
 }

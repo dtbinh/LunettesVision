@@ -18,7 +18,8 @@ Area::Area(void)
 	needRemap = false;
 	hidden = false;
 	needHdr = false;
-	camIndex = -1;
+	empty = true;
+	
 }
 
 Area::~Area(void)
@@ -28,7 +29,12 @@ Area::~Area(void)
 //////////////////////////////////////////////////////////////////////////////
 /// THREAD
 //////////////////////////////////////////////////////////////////////////////
-
+void Area::initHDR(){
+	calibrate =  createCalibrateRobertson();
+	merge_debevec = createMergeDebevec();
+	tonemap = createTonemap();
+	cout <<"create calibrate and merge ptrs ";
+}
 
 Mat Area::HDR(std::vector<cv::Mat>& images, std::vector<double>& times){
 
@@ -46,54 +52,22 @@ Mat Area::HDR(std::vector<cv::Mat>& images, std::vector<double>& times){
     tonemap->process(hdr, ldr);
 	//imwrite("hdr.hdr", hdr);
 	ldr = ldr * 255;
-	imwrite("ldr.png", ldr);
 	return ldr;
  
 }
 
-// Remapthreadfunction without FPS computation (faster, no lag)
+
 void remapThreadFunction(Area* r){
 	cv::cuda::GpuMat srcGpu;
 	INT nMemID = 0;
 	char *pBuffer = NULL;
-	//Avec sequence
 	int nRet, count = 0;
-	
-	//cout<<"code error = " <<nRet<<endl;
-	/*while(IS_SUCCESS == ( nRet = is_WaitForNextImage(r->camera->hCam, 2000, &pBuffer, &nMemID) ) ) {
-			r->frameMutex.lock();
-			srcGpu = (r->getCamFrame(pBuffer));
-			nRet = is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, pBuffer);
-			cout <<"Delock "<<r->camera->hCam<<endl;
-			count ++;
-			// Create the output GpuMat
-			cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
-					
-			if(r->needRemap && r->matrix!=NULL) {
-				r->matrixMutex.lock();
-				cv::cuda::remap(srcGpu,dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),cv::INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
-				r->matrixMutex.unlock();
-			} else {
-				cv::cuda::resize(srcGpu,dstGpu,r->getDisplaySize());
-			}
-			// Copy the output frame on the shared memory with the main thread
-			
-			dstGpu.copyTo((r->currentFrame));
-			r->frameMutex.unlock();
-	}
-	//nRet = is_WaitForNextImage(r->camera->hCam, 2000, &pBuffer, &nMemID);
-	cout<<"je suis sorti "<< r->camera->hCam<<" avec "<<count<<" itérations et code erreur = "<<nRet <<endl;
-	is_ExitImageQueue(r->camera->hCam);
-	is_ClearSequence(r->camera->hCam);
-	*/
-	//Sans sequence
 	while(!r->needClose) {
 		
-		//nRet = is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
+		nRet = is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
 		srcGpu = (r->getCamFrame());
-		//nRet = is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
-		//cout <<"Delock "<<r->camera->hCam<<endl;
-		// Create the output GpuMat
+		nRet = is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
+
 		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
 				
 		if(r->needRemap && r->matrix!=NULL) {
@@ -103,28 +77,84 @@ void remapThreadFunction(Area* r){
 		} else {
 			cv::cuda::resize(srcGpu,dstGpu,r->getDisplaySize());
 		}
-		// Copy the output frame on the shared memory with the main thread
-		//r->frameMutex.lock();S
+		r->frameMutex.lock();
 		dstGpu.copyTo((r->currentFrame));
-		//r->frameMutex.unlock();
+		r->empty = false;
+		r->frameMutex.unlock();
 		
 	}
 	r->camera->exitCamera();
 }
 
+void Area::setHdrThreadFunction(){
+	int numSequence = -1;
+	while(imagesHdr.size() < 2){ //onveut deux images pour HDR
+		UEYEIMAGEINFO ImageInfo;
+		INT nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId, &ImageInfo, sizeof(ImageInfo));
+		/*AOI_SEQUENCE_PARAMS Param;
+		is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_GET_PARAMS, (void*)&Param, sizeof(Param));*/
+		cv::Mat areaFrame(camera->height,camera->width,CV_8UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel/8)); // last param = number of bytes by cols
+		if(numSequence == -1){
+			numSequence= ImageInfo.wAOIIndex;
+			imagesHdr.push_back(areaFrame);
+			timesExpo.push_back(1/8);
+			cout<<"temps d'expo : "<<timesExpo[0]<<endl;
+		}
+		else if(numSequence != ImageInfo.wAOIIndex){
+			cout<<"Numeros de sequence = "<<numSequence<<" et "<< ImageInfo.wAOIIndex<<endl;
+			imagesHdr.push_back(areaFrame);
+			timesExpo.push_back(1/12);
+			cout<<"temps d'expo : "<<timesExpo[0]<<" "<<timesExpo[1]<<endl;
+			imwrite("imagesHdr1.png", imagesHdr[0]);
+			imwrite("imagesHdr2.png", imagesHdr[1]);
+			cout<<"début hdr"<<endl;
+			matHDR = HDR(imagesHdr, timesExpo);
+			cout<<"upload"<<endl;
+			imwrite("HDR.png",matHDR);
+		}
+	}
+	imagesHdr.clear();
+	timesExpo.clear();
+}
+
+void Area::initSequenceAOI(){
+	
+	INT nMask = 0;
+	
+	//Parameters Initialization
+	AOI_SEQUENCE_PARAMS Param;
+	
+	// Set parameters of AOI 1
+	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_1;
+	Param.s32NumberOfCycleRepetitions = 1;
+	Param.s32X = 0;
+	Param.s32Y = 0;
+	Param.dblExposure = 8;
+	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
+	is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	
+	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_2;
+	Param.s32NumberOfCycleRepetitions = 1;
+	Param.dblExposure = 12;
+	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
+	is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	
+	nMask = IS_AOI_SEQUENCE_INDEX_AOI_1 |
+                IS_AOI_SEQUENCE_INDEX_AOI_2;
+
+    // enable sequence mode
+    is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask));
+	
+}
 
 void Area::startThread()
 {
 	// If the area is a color area, we dont need a thread !
 	if(type == CAMERA) {
 		needClose = false;
-		/*calibrate =  createCalibrateRobertson();
-		merge_debevec = createMergeDebevec();
-		tonemap = createTonemap();
-		cout <<"create calibrate and merge ptrs" <<endl;*/
 		currentFrame.create(camera->getSize().height,camera->getSize().width,CV_8UC3);
 		invalidate();	// If needed, compute the remap matrix
-		remapThread = std::thread(remapThreadFunction, this);
+		remapThread = std::thread(remapThreadFunction, this);          
 		remapThread.detach();
 	}
 }
@@ -146,14 +176,12 @@ void Area::invalidate() {
 			matrix = new Matrix(camera->getSize(),cv::Size(displayZone.width,displayZone.height));
 
 		///// INPUT SIZE FOR MATRICES /////
-
 		if(needCrop)
 			matrix->setInputSize(cv::Size(cameraROI.width, cameraROI.height));
 		else
 			matrix->setInputSize(cv::Size(camera->getSize()));
 
 		///// REMAP /////
-
 		matrix->setRemapZone(centralZone, zoom);
 		matrixMutex.lock();
 		matrix->invalidate();
@@ -247,14 +275,8 @@ cv::Rect& Area::getRect(AreaType t)
 
 cv::cuda::GpuMat  Area::getCamFrame(char * pBuffer)
 {
-	/*cv::Mat frame;
-	do {
-		camera->videoStream->retrieve(frame);
-		
-	} while(frame.empty());*/
-	cv::Mat frame(camera->height,camera->width,CV_8UC3,pBuffer, camera->width*(camera->m_bitsPerPixel/8)); // last param = number of bytes by cols
-	//cv::cuda::GpuMat  frameGpu(1200,1600,CV_8UC3,camera->m_pcImageMemory, 1600*3);
 	
+	cv::Mat frame(camera->height,camera->width,CV_8UC3,pBuffer, camera->width*(camera->m_bitsPerPixel/8)); // last param = number of bytes by cols
 	cv::cuda::GpuMat frameGpu;
 	frameGpu.upload(frame);
 	if(needCrop) {
@@ -267,7 +289,6 @@ cv::cuda::GpuMat  Area::getCamFrame(char * pBuffer)
 cv::cuda::GpuMat  Area::getCamFrame()
 {
 	cv::Mat frame(camera->height,camera->width,CV_8UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel/8)); // last param = number of bytes by cols
-	//cv::cuda::GpuMat  frameGpu(1200,1600,CV_8UC3,camera->m_pcImageMemory, 1600*3);
 	cv::cuda::GpuMat frameGpu;
 	
 	frameGpu.upload(frame);

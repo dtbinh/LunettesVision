@@ -73,9 +73,10 @@ private:
 	OSD* osd;
 	int resX, resY;
 	int cameraCount;
+	
 	UEYE_CAMERA_LIST* pucl;
 	void blendAreasZones(Mat& img);
-	void initSequenceAOI(Area *r);
+
 
 	int currentAreaRectangle;
 

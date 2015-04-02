@@ -21,12 +21,12 @@ public:
 	Type type;			// Camera or color ?
 	
 	//For HDR 
-	std::vector<cv::cuda::GpuMat> imagesHdr; 
+	std::vector<cv::Mat> imagesHdr; 
 	std::vector<double> timesExpo;
+	cv::Mat matHDR;
 	cv::Ptr<cv::CalibrateRobertson> calibrate;
 	cv::Ptr<cv::MergeDebevec> merge_debevec;
 	cv::Ptr<cv::Tonemap> tonemap;
-	
 	
 	Matrix* matrix;			// Remap matrix
 	cv::Rect displayZone;	
@@ -37,13 +37,13 @@ public:
 
 	//cv::Mat currentFrame;	// Shared frame with the main thread
 	cv::cuda::GpuMat currentFrame;
+	bool empty;
 	
 	double pParam;
 	std::thread remapThread;
 	std::mutex frameMutex;
 	std::mutex matrixMutex;
 	
-
 	// Methods
 
 	Area(void);
@@ -67,7 +67,10 @@ public:
 	cv::Rect& getRect(AreaType t);
 	void HideAndShow();
 	
+	void initHDR();
+	void setHdrThreadFunction();
 	cv::Mat HDR(std::vector<cv::Mat>& images, std::vector<double>& times);
+	void initSequenceAOI();
 
 	int getWidth(AreaType t);
 	int getHeight(AreaType t);
