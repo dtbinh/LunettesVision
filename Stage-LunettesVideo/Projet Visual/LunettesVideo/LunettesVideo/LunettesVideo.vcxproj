@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{FBC73F3D-C2AB-4503-97B9-6B51068D6A6D}</ProjectGuid>
+    <RootNamespace>LunettesVideo</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <PlatformToolset>v120</PlatformToolset>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\Ceemple\OpenCV4VS\include;C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\include\uEye;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\Ceemple\OpenCV4VS\lib;C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\lib\uEye;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>clBLAS.lib;clFFT.lib;opencv_calib3d300.lib;opencv_calib3d300d.lib;opencv_core300.lib;opencv_core300d.lib;opencv_cuda300.lib;opencv_cuda300d.lib;opencv_cudaarithm300.lib;opencv_cudaarithm300d.lib;opencv_cudabgsegm300.lib;opencv_cudabgsegm300d.lib;opencv_cudacodec300.lib;opencv_cudacodec300d.lib;opencv_cudafeatures2d300.lib;opencv_cudafeatures2d300d.lib;opencv_cudafilters300.lib;opencv_cudafilters300d.lib;opencv_cudaimgproc300.lib;opencv_cudaimgproc300d.lib;opencv_cudalegacy300.lib;opencv_cudalegacy300d.lib;opencv_cudaoptflow300.lib;opencv_cudaoptflow300d.lib;opencv_cudastereo300.lib;opencv_cudastereo300d.lib;opencv_cudawarping300.lib;opencv_cudawarping300d.lib;opencv_cudev300.lib;opencv_cudev300d.lib;opencv_features2d300.lib;opencv_features2d300d.lib;opencv_flann300.lib;opencv_flann300d.lib;opencv_highgui300.lib;opencv_highgui300d.lib;opencv_imgcodecs300.lib;opencv_imgcodecs300d.lib;opencv_imgproc300.lib;opencv_imgproc300d.lib;opencv_ml300.lib;opencv_ml300d.lib;opencv_objdetect300.lib;opencv_objdetect300d.lib;opencv_photo300.lib;opencv_photo300d.lib;opencv_shape300.lib;opencv_shape300d.lib;opencv_stitching300.lib;opencv_stitching300d.lib;opencv_superres300.lib;opencv_superres300d.lib;opencv_ts300.lib;opencv_ts300d.lib;opencv_video300.lib;opencv_video300d.lib;opencv_videoio300.lib;opencv_videoio300d.lib;opencv_videostab300.lib;opencv_videostab300d.lib;StatTimer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <AdditionalIncludeDirectories>C:\Ceemple\OpenCV4VS\include;C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\include\uEye;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>C:\Ceemple\OpenCV4VS\lib;C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\lib\uEye;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>clBLAS.lib;clFFT.lib;opencv_calib3d300.lib;opencv_calib3d300d.lib;opencv_core300.lib;opencv_core300d.lib;opencv_cuda300.lib;opencv_cuda300d.lib;opencv_cudaarithm300.lib;opencv_cudaarithm300d.lib;opencv_cudabgsegm300.lib;opencv_cudabgsegm300d.lib;opencv_cudacodec300.lib;opencv_cudacodec300d.lib;opencv_cudafeatures2d300.lib;opencv_cudafeatures2d300d.lib;opencv_cudafilters300.lib;opencv_cudafilters300d.lib;opencv_cudaimgproc300.lib;opencv_cudaimgproc300d.lib;opencv_cudalegacy300.lib;opencv_cudalegacy300d.lib;opencv_cudaoptflow300.lib;opencv_cudaoptflow300d.lib;opencv_cudastereo300.lib;opencv_cudastereo300d.lib;opencv_cudawarping300.lib;opencv_cudawarping300d.lib;opencv_cudev300.lib;opencv_cudev300d.lib;opencv_features2d300.lib;opencv_features2d300d.lib;opencv_flann300.lib;opencv_flann300d.lib;opencv_highgui300.lib;opencv_highgui300d.lib;opencv_imgcodecs300.lib;opencv_imgcodecs300d.lib;opencv_imgproc300.lib;opencv_imgproc300d.lib;opencv_ml300.lib;opencv_ml300d.lib;opencv_objdetect300.lib;opencv_objdetect300d.lib;opencv_photo300.lib;opencv_photo300d.lib;opencv_shape300.lib;opencv_shape300d.lib;opencv_stitching300.lib;opencv_stitching300d.lib;opencv_superres300.lib;opencv_superres300d.lib;opencv_ts300.lib;opencv_ts300d.lib;opencv_video300.lib;opencv_video300d.lib;opencv_videoio300.lib;opencv_videoio300d.lib;opencv_videostab300.lib;opencv_videostab300d.lib;StatTimer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>C:\Ceemple\OpenCV4VS\include;C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\include\uEye;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>C:\Ceemple\OpenCV4VS\lib;C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\lib\uEye;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>opencv_core300.lib;opencv_core300d.lib;opencv_cuda300.lib;opencv_cuda300d.lib;opencv_cudaarithm300.lib;opencv_cudaarithm300d.lib;opencv_cudabgsegm300.lib;opencv_cudabgsegm300d.lib;opencv_cudacodec300.lib;opencv_cudacodec300d.lib;opencv_cudafeatures2d300.lib;opencv_cudafeatures2d300d.lib;opencv_cudafilters300.lib;opencv_cudafilters300d.lib;opencv_cudaimgproc300.lib;opencv_cudaimgproc300d.lib;opencv_cudalegacy300.lib;opencv_cudalegacy300d.lib;opencv_cudaoptflow300.lib;opencv_cudaoptflow300d.lib;opencv_cudastereo300.lib;opencv_cudastereo300d.lib;opencv_cudawarping300.lib;opencv_cudawarping300d.lib;opencv_cudev300.lib;opencv_cudev300d.lib;opencv_features2d300.lib;opencv_features2d300d.lib;opencv_flann300.lib;opencv_flann300d.lib;opencv_highgui300.lib;opencv_highgui300d.lib;opencv_imgcodecs300.lib;opencv_imgcodecs300d.lib;opencv_imgproc300.lib;uEye_api_64.lib;uEye_api.lib;uEye_tools.lib;uEye_tools_64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\src\Area.cpp" />
+    <ClCompile Include="..\..\..\src\Camera.cpp" />
+    <ClCompile Include="..\..\..\src\FPS.cpp" />
+    <ClCompile Include="..\..\..\src\Function.cpp" />
+    <ClCompile Include="..\..\..\src\LunettesVideo.cpp" />
+    <ClCompile Include="..\..\..\src\main.cpp" />
+    <ClCompile Include="..\..\..\src\Matrix.cpp" />
+    <ClCompile Include="..\..\..\src\MyTimer.cpp" />
+    <ClCompile Include="..\..\..\src\OSD.cpp" />
+    <ClCompile Include="..\..\..\src\OsdNode.cpp" />
+    <ClCompile Include="..\..\..\src\Profile.cpp" />
+    <ClCompile Include="..\..\..\src\tinyxml2.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\src\Area.h" />
+    <ClInclude Include="..\..\..\src\Camera.h" />
+    <ClInclude Include="..\..\..\src\FPS.h" />
+    <ClInclude Include="..\..\..\src\Function.h" />
+    <ClInclude Include="..\..\..\src\LunettesVideo.h" />
+    <ClInclude Include="..\..\..\src\Matrix.h" />
+    <ClInclude Include="..\..\..\src\MyTimer.h" />
+    <ClInclude Include="..\..\..\src\OSD.h" />
+    <ClInclude Include="..\..\..\src\OsdNode.h" />
+    <ClInclude Include="..\..\..\src\Profile.h" />
+    <ClInclude Include="..\..\..\src\resource.h" />
+    <ClInclude Include="..\..\..\src\tinyxml2.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

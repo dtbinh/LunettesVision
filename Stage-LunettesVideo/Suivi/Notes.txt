@@ -1,0 +1,25 @@
+﻿ 
+- Remove les threads ? Pas de gain visible à l'écran : calculer les taux de lags avec et sans.
+
+MAJ : défaut des threads visibles à l'écran : lag considérable.... Mauvaise utilisation, à mon avis contraire au principe de fonctionnement de uEye (déja threads de capture)
+
+
+OLD Version : Thread capture => thread rempar + copie => boucle for des aires => fusion
+
+NEW Version : Thread capture => boucle for de copie + remap => fusion  >>>>> Meilleur rendu
+
+Car problème d'envoi de données entre trhead (part du cpu) et gpu. 
+
+D'après info : gpu doit reset ses blocks a chaque thread différent, donc nul...
+Probleme pouvant être réglé en utilisant OpenCL plutot que Cuda. A vérifier.
+
+
+Le problème des frames coupées en deux apparait aussi sur UEye Demo : donc interne au fonctionnement des cameras, au moins sur Linux....Je vais refaire un test sur windows.
+
+
+EDIT : Problème des frames coupées réglé ! 
+Solution : Utiliser is_IsVideoFinnish pour tester l'intégrité de la frame, et passer sous Windows, car pas mal de fonctionnalités nécessaires au projet sont sans effets sous Linux 
+(et Attention, je veux dire : elles ne plantent pas ni ne renvoient de code d'erreur : elles sont juste sans aucun effet, mais avec un code d'erreur OK...)
+
+
+- Intégration de la partie HDR de Farrugia : Compliqué, c'est du vieux OpenCV 1.0, faut tout passer en 3.0... Je vais en avoir pour la journée à faire compiler ce truc.

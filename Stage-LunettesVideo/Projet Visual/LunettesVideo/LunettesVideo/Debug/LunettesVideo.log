@@ -1,0 +1,74 @@
+﻿La génération a démarré 08/04/2015 10:19:56.
+     1>Projet "C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\Projet Visual\LunettesVideo\LunettesVideo\LunettesVideo.vcxproj" sur le nœud 2 (Build cible(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /IC:\Ceemple\OpenCV4VS\include /I"C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\include\uEye" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\..\..\src\Area.cpp ..\..\..\src\Camera.cpp ..\..\..\src\FPS.cpp ..\..\..\src\Function.cpp ..\..\..\src\LunettesVideo.cpp ..\..\..\src\main.cpp ..\..\..\src\Matrix.cpp ..\..\..\src\MyTimer.cpp ..\..\..\src\OSD.cpp ..\..\..\src\OsdNode.cpp ..\..\..\src\Profile.cpp ..\..\..\src\tinyxml2.cpp
+         tinyxml2.cpp
+         Profile.cpp
+         OsdNode.cpp
+         OSD.cpp
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\osd.cpp(92): warning C4018: '<' : incompatibilité signed/unsigned
+         MyTimer.cpp
+         Matrix.cpp
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(40): warning C4305: '=' : troncation de 'double' à 'float'
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(42): warning C4244: 'argument' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(90): warning C4244: '=' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(96): warning C4244: 'argument' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(103): warning C4244: '=' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(105): warning C4244: 'argument' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(117): warning C4244: '=' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(119): warning C4244: 'argument' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(121): warning C4244: '=' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(123): warning C4244: 'argument' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(136): warning C4244: 'return' : conversion de 'int' en 'float', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\matrix.cpp(197): warning C4244: '=' : conversion de 'double' en 'float', perte possible de données
+         main.cpp
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\main.cpp(37): warning C4101: 'resX' : variable locale non référencée
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\main.cpp(37): warning C4101: 'resY' : variable locale non référencée
+         LunettesVideo.cpp
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(106): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(71): warning C4101: 'camIndex' : variable locale non référencée
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(161): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(168): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(212): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(188): warning C4101: 'pActIntr' : variable locale non référencée
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(188): warning C4101: 'pIntr' : variable locale non référencée
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(296): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(347): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(364): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(371): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(380): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(392): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(410): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(436): warning C4018: '<' : incompatibilité signed/unsigned
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\lunettesvideo.cpp(472): warning C4018: '<' : incompatibilité signed/unsigned
+         Function.cpp
+         FPS.cpp
+         Camera.cpp
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\camera.cpp(122): warning C4244: '=' : conversion de 'double' en 'size_t', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\camera.cpp(266): warning C4244: 'argument' : conversion de 'double' en 'int', perte possible de données
+         Area.cpp
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\area.cpp(60): warning C4101: 'nRet' : variable locale non référencée
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\area.cpp(222): warning C4244: '+=' : conversion de 'double' en 'int', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\area.cpp(223): warning C4244: '+=' : conversion de 'double' en 'int', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\area.cpp(224): warning C4244: '*=' : conversion de 'double' en 'int', perte possible de données
+     1>c:\users\bergil\stage lunette - version windows\stage-lunettesvideo\src\area.cpp(225): warning C4244: '*=' : conversion de 'double' en 'int', perte possible de données
+         Génération de code en cours...
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\Projet Visual\LunettesVideo\Debug\LunettesVideo.exe" /INCREMENTAL /NOLOGO /LIBPATH:C:\Ceemple\OpenCV4VS\lib /LIBPATH:"C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\lib\uEye" clBLAS.lib clFFT.lib opencv_calib3d300.lib opencv_calib3d300d.lib opencv_core300.lib opencv_core300d.lib opencv_cuda300.lib opencv_cuda300d.lib opencv_cudaarithm300.lib opencv_cudaarithm300d.lib opencv_cudabgsegm300.lib opencv_cudabgsegm300d.lib opencv_cudacodec300.lib opencv_cudacodec300d.lib opencv_cudafeatures2d300.lib opencv_cudafeatures2d300d.lib opencv_cudafilters300.lib opencv_cudafilters300d.lib opencv_cudaimgproc300.lib opencv_cudaimgproc300d.lib opencv_cudalegacy300.lib opencv_cudalegacy300d.lib opencv_cudaoptflow300.lib opencv_cudaoptflow300d.lib opencv_cudastereo300.lib opencv_cudastereo300d.lib opencv_cudawarping300.lib opencv_cudawarping300d.lib opencv_cudev300.lib opencv_cudev300d.lib opencv_features2d300.lib opencv_features2d300d.lib opencv_flann300.lib opencv_flann300d.lib opencv_highgui300.lib opencv_highgui300d.lib opencv_imgcodecs300.lib opencv_imgcodecs300d.lib opencv_imgproc300.lib opencv_imgproc300d.lib opencv_ml300.lib opencv_ml300d.lib opencv_objdetect300.lib opencv_objdetect300d.lib opencv_photo300.lib opencv_photo300d.lib opencv_shape300.lib opencv_shape300d.lib opencv_stitching300.lib opencv_stitching300d.lib opencv_superres300.lib opencv_superres300d.lib opencv_ts300.lib opencv_ts300d.lib opencv_video300.lib opencv_video300d.lib opencv_videoio300.lib opencv_videoio300d.lib opencv_videostab300.lib opencv_videostab300d.lib StatTimer.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\Projet Visual\LunettesVideo\Debug\LunettesVideo.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\Projet Visual\LunettesVideo\Debug\LunettesVideo.lib" /MACHINE:X86 Debug\Area.obj
+         Debug\Camera.obj
+         Debug\FPS.obj
+         Debug\Function.obj
+         Debug\LunettesVideo.obj
+         Debug\main.obj
+         Debug\Matrix.obj
+         Debug\MyTimer.obj
+         Debug\OSD.obj
+         Debug\OsdNode.obj
+         Debug\Profile.obj
+         Debug\tinyxml2.obj
+     1>opencv_highgui300.lib(opencv_highgui300.dll) : fatal error LNK1112: type d'ordinateur module 'x64' en conflit avec le type d'ordinateur cible 'X86'
+     1>Génération du projet "C:\Users\Bergil\Stage Lunette - version Windows\Stage-LunettesVideo\Projet Visual\LunettesVideo\LunettesVideo\LunettesVideo.vcxproj" terminée (Build cible(s)) -- ÉCHEC.
+
+ÉCHEC de la build.
+
+Temps écoulé 00:00:08.68

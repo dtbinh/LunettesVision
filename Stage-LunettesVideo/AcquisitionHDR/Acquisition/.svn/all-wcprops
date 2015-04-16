@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 54
+/ffouquet/!svn/ver/206/Code/AcquisitionHDR/Acquisition
+END
+mainCalibrage.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/ffouquet/!svn/ver/207/Code/AcquisitionHDR/Acquisition/mainCalibrage.cpp
+END
+premake4.lua
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/ffouquet/!svn/ver/207/Code/AcquisitionHDR/Acquisition/premake4.lua
+END
+mainLdrToHdr.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/ffouquet/!svn/ver/207/Code/AcquisitionHDR/Acquisition/mainLdrToHdr.cpp
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/ffouquet/!svn/ver/205/Code/AcquisitionHDR/Acquisition/Makefile
+END

@@ -1,0 +1,484 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <assert.h>
+
+#include <SDL/SDL.h>
+#include <GL/glew.h>
+
+#include "img.h"
+#include "hdr.h"
+#include "tga.h"
+#include "glsl.h"
+
+
+#define VERBOSE 0
+#define VERBOSE_DEBUG 0
+
+int stop= 0;
+const SDL_VideoInfo *screen_info= NULL;
+SDL_Surface *screen= NULL;
+
+IMG *hdr= NULL;
+int width= 0;
+int height= 0;
+
+GLuint texname;
+GLuint textarget;
+GLuint texformat;
+
+GLhandleARB glsl_program;
+GLint loc_compression= -1;
+GLint loc_saturation= -1;
+GLint loc_tex= -1;
+
+char tgafname[1024];
+char hdrfname[1024];
+
+float tone_delta= 1.f;
+float tone_compression= 1.f;
+float tone_saturation= 2.3f;
+
+static void display_frame(float x, float y, float z, float w, float h)
+{
+    float u= w;
+    float v= h;
+
+    glBindTexture(textarget, texname);
+    glEnable(textarget);
+
+    glColor3f(1.f, 0.f, 1.f);
+    glUseProgramObjectARB(glsl_program);
+    glUniform1iARB(loc_tex, 0);
+    glUniform1fARB(loc_compression, tone_compression);
+    glUniform1fARB(loc_saturation, tone_saturation);
+    glColor3f(1.f, 0.f, 1.f);
+
+    glBegin(GL_QUADS);
+        glTexCoord2f(0.f, 0.f);
+        glVertex3f(x, y+h, z);
+
+        glTexCoord2f(0.f, v);
+        glVertex3f(x, y, z);
+
+        glTexCoord2f(u, v);
+        glVertex3f(x+w, y, z);
+
+        glTexCoord2f(u, 0.f);
+        glVertex3f(x+w, y+h, z);
+    glEnd();
+
+    glDisable(textarget);
+}
+
+
+static void display(void)
+{
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    display_frame(0.f, 0.f, -.5f, hdr->largeur, hdr->hauteur);
+    
+    SDL_GL_SwapBuffers();
+}
+
+
+static int resize(int width, int height)
+{
+    screen_info= SDL_GetVideoInfo();
+    if(screen_info==NULL)
+    {
+        printf("\n -- failed: '%s'\n", SDL_GetError());
+        SDL_Quit();
+        return -1;
+    }
+    
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    
+    screen= SDL_SetVideoMode(width, height, 
+            screen_info->vfmt->BitsPerPixel, 
+            SDL_RESIZABLE | SDL_OPENGL | SDL_HWSURFACE);
+    if(screen==NULL)
+    {
+        printf("\n -- failed: '%s'\n", SDL_GetError());
+        SDL_Quit();
+        return -1;
+    }
+    
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    
+    glOrtho(0.0, hdr->largeur, 0.0, hdr->hauteur, -1.0, 1.0);
+    glViewport(0, 0,  width, width * (float) hdr->hauteur / (float) hdr->largeur);
+    
+    return 0;
+}
+
+static void keyboard(SDL_Event *event)
+{
+    char tmp[128];
+    SDLMod mod;
+    
+    mod= SDL_GetModState();
+ 
+    switch(event->key.keysym.sym)
+    {
+        case SDLK_q:
+        case SDLK_ESCAPE:
+            stop= 1;
+        break;
+
+        case SDLK_UP:
+        case '-':
+            if(mod&KMOD_CTRL || mod&KMOD_ALT)
+                tone_saturation-= tone_delta / 100.f;
+            else
+                tone_saturation-= tone_delta;
+            
+            if(tone_saturation < 0.f)
+                tone_saturation= 0.f;
+
+            sprintf(tmp, " %dx%d (%f, %f)", hdr->largeur, hdr->hauteur, 
+                tone_saturation, tone_compression);
+            SDL_WM_SetCaption(tmp, "");
+        break;
+        
+        case SDLK_DOWN:
+        case '+':
+            if(mod&KMOD_CTRL || mod&KMOD_ALT)
+                tone_saturation+= tone_delta / 100.f;
+            else
+                tone_saturation+= tone_delta;
+            
+            sprintf(tmp, "%dx%d (%f, %f)", hdr->largeur, hdr->hauteur, 
+                tone_saturation, tone_compression);
+            SDL_WM_SetCaption(tmp, "");
+        break;
+        
+        case SDLK_LEFT:
+        case '/':
+            tone_compression-= .1f;
+            if(tone_compression < 0.f)
+                tone_compression= .1f;
+
+            sprintf(tmp, "%dx%d (%f, %f)", hdr->largeur, hdr->hauteur, 
+                tone_saturation, tone_compression);
+            SDL_WM_SetCaption(tmp, "");
+        break;
+        
+        case SDLK_RIGHT:
+        case '*':
+            tone_compression+= .1f;
+
+            sprintf(tmp, "%dx%d (%f, %f)", hdr->largeur, hdr->hauteur, 
+                tone_saturation, tone_compression);
+            SDL_WM_SetCaption(tmp, "");
+        break;
+
+        case 'r':
+        case 'R':
+            if(is_hdr(hdrfname))
+            {
+                free_img(hdr);
+                hdr= hdr_read(hdrfname);
+            }
+            else if(is_tga(hdrfname))
+            {
+                free_img(hdr);
+                hdr= tga_read(hdrfname);
+                img_rgbfloat_rgb24(hdr, hdr);
+            }
+            else
+                printf("\n -- unknown format: '%s'\n", hdrfname);
+            assert(hdr!=NULL);
+
+            sprintf(tmp, "[reload]");
+            SDL_WM_SetCaption(tmp, "");
+        break;
+        
+        case 's':
+        case 'S':
+            printf("saving '%s'\n", tgafname);
+            img_hdr_preview(hdr, tone_compression, tone_saturation);
+            tga_write(hdr, tgafname);
+        break;
+        
+        case 'n':
+        case 'N':
+            resize(width, height);
+        break;
+
+        default:
+        break;
+    }
+}
+
+
+
+static int initsdl(int width, int height)
+{
+    if(SDL_Init(SDL_INIT_VIDEO) < 0)
+    { 
+        printf("\n -- failed : '%s'\n", SDL_GetError());
+        return -1;
+    }
+
+    SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, 20);
+    
+    atexit(SDL_Quit);
+    resize(width, height);
+    return 0;
+}
+
+
+static void process_events(void)
+{
+    SDL_Event event;
+
+    while(SDL_PollEvent(&event))
+    {
+        switch(event.type)
+        {
+            // case SDL_KEYUP:
+            case SDL_KEYDOWN:
+                keyboard(&event);
+                break;
+            
+            case SDL_VIDEORESIZE:
+                resize(event.resize.w, event.resize.h);
+                break;
+            
+            case SDL_QUIT:
+                stop= 1;
+                break;
+        }
+    }
+}
+
+
+
+void initglew(void)
+{
+    int ext, format;
+    GLenum err;
+
+    err= glewInit();
+    if(err != GLEW_OK)
+    {
+        printf("%s\n", glewGetErrorString(err));
+        extFailed("GLEW");
+        
+        exit(0);
+    }
+    
+#if VERBOSE_DEBUG
+    printf("GLEW %s\n", glewGetString(GLEW_VERSION));
+#endif
+    
+    ext= 0;
+    if(ext==0 && extIsSupported("GL_ARB_texture_rectangle", "    ARB_texture_rectangle", VERBOSE)==0)
+    {
+            ext= 1;
+            textarget= GL_TEXTURE_RECTANGLE_ARB;
+    }
+    
+    if(extIsSupported("GL_NV_texture_rectangle", "    NV_texture_rectangle", VERBOSE)==0)
+    {
+        ext= 1;
+        textarget= GL_TEXTURE_RECTANGLE_NV;
+    }
+
+    if(ext != 0)
+        extSupported("texture rectangle");
+    
+    else
+    {
+        extFailed("texture rectangle");
+        exit(0);
+    }
+    
+    // . texture float
+    format= 0;
+    if(format==0 && extIsSupported("GL_ARB_texture_float", "    ARB_texture_float", VERBOSE)==0)
+    {
+        format= 1;
+        texformat= GL_RGB32F_ARB;
+    }
+
+    if(format==0 && extIsSupported("GL_ATI_texture_float", "    ATI_texture_float", VERBOSE)==0)
+    {
+        format= 1;
+        texformat= GL_RGB_FLOAT32_ATI;
+    }
+
+    if(format==0 && extIsSupported("GL_NV_float_buffer", "    NV_float_buffer", VERBOSE)==0)
+    {
+        format= 1;
+        texformat= GL_FLOAT_RGB32_NV;
+    }
+
+    if(format != 0)
+        extSupported("texture float");
+    
+    else
+    {
+        extFailed("texture float");
+        exit(0);
+    }
+}
+
+void initgl(IMG *img)
+{
+    GLenum err;
+
+    width= img->largeur;
+    height= img->hauteur;
+    
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearDepth(1.);
+    
+    glShadeModel(GL_FLAT);
+    
+    /* textures
+    */
+    glGenTextures(1, &texname);
+    assert(glGetError()==GL_NO_ERROR);
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(textarget, texname);
+    glTexParameteri(textarget, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(textarget, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(textarget, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(textarget, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    assert(glGetError()==GL_NO_ERROR);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+    glTexImage2D(textarget, 0, texformat,
+        img->largeur, img->hauteur, 0,
+        GL_RGB, GL_FLOAT, img->dataf);
+
+    err= glGetError();
+    if(err != GL_NO_ERROR)
+        fprintf(stderr, "\n -- failed: %s:%d %s()\n%s\n", __FILE__, __LINE__, __func__, gluErrorString(err));
+    
+    // glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+}
+
+void inittone(IMG *hdr)
+{
+    float l, lmax;
+    int size;
+    int i;
+    
+    l= .3f*hdr->dataf[0] + .59f*hdr->dataf[1] + .11f*hdr->dataf[2];
+    lmax= l;
+    
+    size= 3*hdr->largeur*hdr->hauteur;
+    for(i= 3; i < size; i+= 3)
+    {
+        l= .3f*hdr->dataf[i] + .59f*hdr->dataf[i +1] + .11f*hdr->dataf[i +2];
+
+        if(l > lmax)
+            lmax= l;
+    }
+    
+    tone_delta= lmax / 20.f;
+    printf("hdr : max %f,  delta %f\n", lmax, tone_delta);
+    
+    tone_saturation= lmax;
+}
+
+
+int main(int argc, char **argv, char **env)
+{
+    hdr= NULL;
+    
+    if(argc != 2 && argc != 3)
+    {
+        printf("usage %s: image.[hdr|tga] [image.tga]\n", argv[0]);
+        return 1;
+    }
+
+    strcpy(hdrfname, argv[1]);
+    if(is_hdr(hdrfname))
+    {
+        hdr= hdr_read(hdrfname);
+        tone_compression= 2.2f;
+    }
+    else if(is_tga(hdrfname))
+    {
+        hdr= tga_read(hdrfname);
+        img_rgbfloat_rgb24(hdr, hdr);
+        tone_compression= 1.0f;
+    }
+    else
+        printf("\n -- unknown format: '%s'\n", argv[1]);
+
+    if(hdr==NULL)
+        return 1;
+    
+    if(argc > 2)
+        strcpy(tgafname, argv[2]);
+    else
+    {
+        // construit un nom de fichier .tga
+        strcpy(tgafname, argv[1]);
+        hdr_basename(tgafname);
+        strcat(tgafname, ".tga");
+    }
+
+    /* ouvre la fenetre gl 
+     */
+    if(initsdl(512, 512) < 0)
+        return 1;
+    SDL_WM_SetCaption("image viewer", "");
+    
+    inittone(hdr);
+    img_hdr_preview(hdr, tone_compression, tone_saturation);
+
+   /* charge les shaders
+     */
+    // verifie les extensions et le format de texture (rectangle, float)
+    initglew();
+    
+    // charge les shaders
+    glsl_program= initglsl(argv[0], env, "fixed.vertex.txt", "tone.fragment.txt");
+
+    // recupere les parametres des shaders
+    loc_tex= glGetUniformLocationARB(glsl_program, "tex0");
+    if(loc_tex < 0)
+    {
+        extFailed("uniform : tex0");
+        return 0;
+    }
+    loc_compression= glGetUniformLocationARB(glsl_program, "compression");
+    if(loc_compression < 0)
+    {
+        extFailed("uniform : compression");
+        return 0;
+    }
+    loc_saturation= glGetUniformLocationARB(glsl_program, "saturation");
+    if(loc_saturation < 0)
+    {
+        extFailed("uniform : saturation");
+        return 0;
+    }
+    
+    /* cree la texture 
+     */	
+    initgl(hdr);
+     
+    while(!stop)
+    {
+        process_events();
+        // anime();
+        display();
+    }
+    
+    SDL_Quit();
+    return 0;
+}

@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR
+END
+rgbe.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/rgbe.cpp
+END
+tga.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/tga.h
+END
+glsl.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/glsl.cpp
+END
+img.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/img.h
+END
+hdr.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/hdr.h
+END
+rgbe.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/rgbe.h
+END
+glsl.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/glsl.h
+END
+view.c.back
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/view.c.back
+END
+tga.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/tga.cpp
+END
+img.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/img.cpp
+END
+hdr.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_HDR/hdr.cpp
+END

@@ -1,0 +1,15 @@
+ 
+- Télécharger Opencv 3.0
+- Télécharger Cuda 6.5 et l'installer (la version 7.0 n'est pas encore 100% stable)
+- Installer Cmake
+
+- dans le dossier d'opencv lancer dans un terminal : sudo cmake-gui
+- Lancer configure, en indiquant le dossier build de sortie (cmake le créé pour vous)
+- dans CUDA, assurez vous que CUDA_GENERATION soit sur Auto
+- dans WITH, assurez vous que CUDA soit cochée
+- Configurez jusqu'à disparition des lignes en rouge
+- Générer
+
+- Ouvrez un terminal dans le nouveau dossier build, et faites sudo cmake .
+- Ensuite, faites sudo make.
+- Patientez !

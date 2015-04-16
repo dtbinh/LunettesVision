@@ -1,0 +1,107 @@
+K 25
+svn:wc:ra_dav:version-url
+V 62
+/ffouquet/!svn/ver/206/Code/AcquisitionHDR/Acquisition/include
+END
+Vector3d.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Vector3d.hpp
+END
+responseFunctionEstimator.h
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/ffouquet/!svn/ver/205/Code/AcquisitionHDR/Acquisition/include/responseFunctionEstimator.h
+END
+Webcam.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Webcam.hpp
+END
+Trackball.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Trackball.hpp
+END
+Utils.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Utils.hpp
+END
+utilitaire_calibrage_HDR.h
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/ffouquet/!svn/ver/207/Code/AcquisitionHDR/Acquisition/include/utilitaire_calibrage_HDR.h
+END
+nr3.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/nr3.h
+END
+Tester.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Tester.hpp
+END
+SwissRanger.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/SwissRanger.hpp
+END
+ExrWrite.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/ffouquet/!svn/ver/205/Code/AcquisitionHDR/Acquisition/include/ExrWrite.hpp
+END
+Transform.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Transform.h
+END
+solveur_Debevec.h
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/solveur_Debevec.h
+END
+ran.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/ran.h
+END
+MTB.h
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/ffouquet/!svn/ver/206/Code/AcquisitionHDR/Acquisition/include/MTB.h
+END
+Opengl.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Opengl.hpp
+END
+VoxelsGrid.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/VoxelsGrid.hpp
+END
+Camera.hpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Camera.hpp
+END

@@ -1,0 +1,52 @@
+ 
+Mise en placede la HDR : 
+ 
+Utiliser les fonctions HDR des cameras uEye si possible (suivant modèle), sinon :
+
+- Créer une séquence AOI prenant en compte pour chaque camera la totalité de la frame. Il faut deux AOI distinctes, avec deux parametres d'exposition non proche (ici 15 et 5 millisecondes)
+
+void LunettesVideo::initSequenceAOI(Area *r){
+	INT nMask = 0;
+	
+	//Parameters Initialization
+	AOI_SEQUENCE_PARAMS Param;
+	
+	// Set parameters of AOI 1
+	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_1;
+	Param.s32NumberOfCycleRepetitions = 1;
+	Param.s32X = 0;
+	Param.s32Y = 0;
+	Param.dblExposure = 15;
+	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
+	INT nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	
+	
+	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_2;
+	Param.dblExposure = 5;
+	nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
+	
+	nMask = IS_AOI_SEQUENCE_INDEX_AOI_1 | IS_AOI_SEQUENCE_INDEX_AOI_2;
+	nRet = is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask));	
+}
+
+- Mettre en place le bouton d'activation de l'HDR dans l'OSD, puis utiliser un booléen dans le run() pour déterminer quand la séquence doit être enclencée ou non : 
+
+if (changeExposure){
+  if (!needHdr) {
+	  pParam = 10;
+	  INT nMask = 0;
+	  is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask)); //Stop Sequence HDR
+	  is_Exposure(r->camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*) &pParam, sizeof (pParam));
+ 
+  }
+  else{
+	  initSequenceAOI(r);
+  }
+}
+
+- S'assurer que la camera est en mode GlobalShutter (on capture tout une image avant de la traiter, != de RollingShutter) => Work In Progress
+
+- Utiliser la fonction is_GetImageInfo pour retrouver le numero de sequence d'une image de camera, et ainsi permettre la synchronisation des deux flux video, pas entre eux, mais chaque frame ac la suivante.
+
+- Ne pas utiliser la technique d'OpenCv : la recherche de la fonction de réponse et le calcul sont beaucoup trop longs, on veut du temps réel.
+

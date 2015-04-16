@@ -1,0 +1,6 @@
+Ce dossier contient du code issu de la Démo Coresa 2010.
+Il a été modifié et nettoyé pour ne plus contenir que du code utile pour le calibrage de cameras couleur et la reconstruction d'images HDR d'après des images LDR faites avec ces caméras.
+
+Dépendences :
+- OpenEXR
+- OpenCV 1.?? 

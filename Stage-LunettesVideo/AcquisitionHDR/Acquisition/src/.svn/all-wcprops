@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/ffouquet/!svn/ver/206/Code/AcquisitionHDR/Acquisition/src
+END
+Webcam.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/Webcam.cpp
+END
+Trackball.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/Trackball.cpp
+END
+Hybrid.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/Hybrid.cpp
+END
+MTB.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/ffouquet/!svn/ver/206/Code/AcquisitionHDR/Acquisition/src/MTB.cpp
+END
+Main.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/Main.cpp
+END
+VoxelsGrid.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/VoxelsGrid.cpp
+END
+SwissRanger.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/SwissRanger.cpp
+END
+Vector3d.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/Vector3d.cpp
+END
+Transform.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/Transform.cpp
+END
+solveur_Debevec.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/src/solveur_Debevec.cpp
+END
+responseFunctionEstimator.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/ffouquet/!svn/ver/207/Code/AcquisitionHDR/Acquisition/src/responseFunctionEstimator.cpp
+END

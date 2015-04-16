@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD
+END
+mrq.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/mrq.cpp
+END
+svd.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/svd.h
+END
+gaussj.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/gaussj.h
+END
+cheb.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/cheb.cpp
+END
+mrq.h
+K 25
+svn:wc:ra_dav:version-url
+V 85
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/mrq.h
+END
+matrix.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/matrix.cpp
+END
+kl.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/kl.cpp
+END
+cheb.h
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/cheb.h
+END
+matrix.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/matrix.h
+END
+kl.h
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/kl.h
+END
+nrutil.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/nrutil.cpp
+END
+nrutil.h
+K 25
+svn:wc:ra_dav:version-url
+V 88
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/nrutil.h
+END
+fourn.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/fourn.cpp
+END
+svd.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/svd.cpp
+END
+gaussj.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/ffouquet/!svn/ver/203/Code/AcquisitionHDR/Acquisition/include/Bibliotheque_SVD/gaussj.cpp
+END

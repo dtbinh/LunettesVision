@@ -1,0 +1,49 @@
+ 
+Utiliser Linux pour le projet !!
+
+- Commencer par enlever tous les parties windows spécifiques, et les remplacer par des équivalents linux (principalement les variables comme CV_WINDOW_NORMAL deviennent cv::WINDOW_NORMAL, ou encore les Input Key)
+
+- télécharger et installer une version linux de driver NVIDIA capable de gérer CUDA. (nécessaire d'arreter le serveur X pour cela)
+
+- Télécharger CUDA et OPENCV 3.0, les installer
+
+- Télécharger et installer le programme IDS Camera Manager de UEye, celui spécifique à Linux. Pour lancer le programme dans un terminal : sudo idscameramanager
+Il fonctionne comme sous windows, principalement
+
+- Soit utiliser un environnement de développement, comme eclipse ou qt, soit utiliser CMAKE (ma solution). Il faut bien entendu le télécharger.
+  - Dans le dossier courant :  plusieurs dossiers :
+      - src : où l'on met les sources
+      - res : où sont situés les ressources (params.xml, liste de profilesX.xml, le background de l'osd..)
+      - uEye (ou autre nom comme camera, ici ce n'est pas important) : les fichiers de paramètres des caméras, de syntaxe params*.ini, générés grâce à IDS Camera Manager
+  
+  - Toujours dans le dossier courant : un fichier CMakeLists.txt, rempli comme suit :
+  
+cmake_minimum_required(VERSION 2.8)
+set (CMAKE_MODULE_PATH .) 
+project(LunettesVideo) //nom du projet
+
+add_definitions(-std=c++11) //version de c++
+
+find_package( OpenCV REQUIRED )
+include_directories( ${OpenCV_INCLUDE_DIRS} /usr/local/include/ ) //le chemin des biblio
+
+find_package( uEyeUsb REQUIRED )
+include_directories( ${UEYEUSB_INCLUDE_DIR} )
+message("Found uEye : " ${UEYEUSB_INCLUDE_DIR})
+
+include_directories( src )
+aux_source_directory( src sourcefiles ) //les sources
+
+add_executable( LunettesVideo ${sourcefiles} ) 
+target_link_libraries( LunettesVideo ${OpenCV_LIBS} ${UEYEUSB_LIBRARY}) //liaison des biblio
+
+
+
+Pour compiler : ouvrez un terminal dans le dossier courant du projet, puis :
+- Au tout début : cmake . => générer le makefile
+- A chaque (re)compilation : makefile
+
+Lancement de l'executable : ./LunettesVideo
+
+
+
