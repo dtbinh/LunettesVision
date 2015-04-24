@@ -1,18 +1,16 @@
 #include "Camera.h"
 using namespace std;
+using namespace cv;
+#include <fstream>
 
 INT initCamera (HIDS *hCam, HWND hWnd)
-{
-		
+{	
     INT nRet = is_InitCamera (hCam, hWnd);	
-
-	
 	int ret = is_ParameterSet(*hCam, IS_PARAMETERSET_CMD_LOAD_EEPROM, NULL, 0); //ajout eric
 	if (ret != IS_SUCCESS)
     {
 			printf("probleme chargement des parametres camera de la EEPROM - ");
 	}
-
 
     /************************************************************************************************/
     /*                                                                                              */
@@ -36,7 +34,7 @@ INT initCamera (HIDS *hCam, HWND hWnd)
         sprintf (Str3, "%s %d %s", Str1, nUploadTime / 1000, Str2);
         
 		// This seems to be windows specific.
-        //MessageBox (NULL, Str3, "", MB_ICONWARNING);
+        MessageBox (NULL, Str3, "", MB_ICONWARNING);
 
         // Try again to open the camera. This time we allow the automatic upload of the firmware by
         // specifying "IS_ALLOW_STARTER_FIRMWARE_UPLOAD"
@@ -81,10 +79,8 @@ Camera::Camera(int index)
 				active = false;	
 				return ;
 		}
-
 		is_SetImageMem(hCam, m_pcImageMemory, m_nMemoryId);
 		// set the image size to capture
-			
 
 		IS_SIZE_2D imageSize;
 		imageSize.s32Width = width;
@@ -104,8 +100,7 @@ Camera::Camera(int index)
 			active = false;	
 			return;
 		}
-		active = true;
-		
+		active = true;	
 	}
 	else
 	{
@@ -113,46 +108,95 @@ Camera::Camera(int index)
 		 active = false;	
 		 return;
 	}
-	//Enable frame event
-	//HANDLE hEvent = CreateEvent(NULL, FALSE, FALSE, NULL); //Windows specific
-	//is_InitEvent(hCam, hEvent, IS_SET_EVENT_FRAME); //Windows specific
-	is_EnableEvent(hCam, IS_SET_EVENT_FRAME);
-	
+
 	//Boost
-	nRet = is_SetGainBoost(hCam, IS_SET_GAINBOOST_ON);
-	cout<<"Boost = "<<nRet<<endl;
+	//nRet = is_SetGainBoost(hCam, IS_SET_GAINBOOST_ON);
+	//cout<<"Boost = "<<nRet<<endl;
 	
 	//Set FrameRate
-	nRet = is_SetFrameRate(hCam, desiredFrameRate, &m_actualFrameRate);
-	if (nRet != IS_SUCCESS) {
-		cout << "WARNING! Failed to set frame rate to: " << desiredFrameRate << endl;
-		cout << "Actual frame rate: " << m_actualFrameRate << endl;
-		m_numberOfFrames = m_actualFrameRate;
-	}else
-		m_numberOfFrames = desiredFrameRate;
-	
-	cout <<"FPS = " <<m_numberOfFrames	<<endl;
+	setFrameRate(desiredFrameRate);
 	
 	//Global Shutter
-	INT nSupportedFeatures;
-	if (is_DeviceFeature(hCam, IS_DEVICE_FEATURE_CMD_GET_SUPPORTED_FEATURES, (void*) &nSupportedFeatures, sizeof(nSupportedFeatures)) == IS_SUCCESS )
-	{
-		if (nSupportedFeatures & IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_GLOBAL)
-		{
-			int nMode = IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_GLOBAL;
-			nRet = is_DeviceFeature(hCam, IS_DEVICE_FEATURE_CMD_SET_SHUTTER_MODE, (void*) &nMode, sizeof(nMode));
-			cout<<"Global Shutter code retour (0 = success) = "<<nRet<<endl;
-		}
-		else
-			cout<<"Global Shutter pas supporte"<<endl;
-	}
-	
-	//HDR mode IDS	
-	nRet = is_EnableHdr(hCam, IS_ENABLE_HDR);
-	if (nRet != IS_SUCCESS)
-		cout<<"Invalid HDR Mode IDS for this device, error code = "<<nRet<<endl;	
+	int nMode = IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_GLOBAL;
+	setShutterMode(nMode);
+
+	//HDR mode 	
+	enableHdrMode();
 	
 	cout << "Frame size: " << width << " x " << height << " Status : ";
+}
+
+void Camera::setFrameRate(int desiredFrameRate){
+
+	int nRet = is_SetFrameRate(hCam, desiredFrameRate, &m_actualFrameRate);
+	if (nRet != IS_SUCCESS) {
+		cout << "WARNING! Failed to set frame rate to: " << desiredFrameRate << endl;
+		cout << "Current frame rate: " << m_actualFrameRate << endl;
+		m_numberOfFrames = m_actualFrameRate;
+	}
+	else
+		m_numberOfFrames = desiredFrameRate;
+	cout << "FPS = " << m_numberOfFrames << endl;
+}
+
+void Camera::setShutterMode(int nMode){
+	INT nSupportedFeatures;
+	if (is_DeviceFeature(hCam, IS_DEVICE_FEATURE_CMD_GET_SUPPORTED_FEATURES, (void*)&nSupportedFeatures, sizeof(nSupportedFeatures)) == IS_SUCCESS){
+		if (nSupportedFeatures & nMode){
+			int nRet = is_DeviceFeature(hCam, IS_DEVICE_FEATURE_CMD_SET_SHUTTER_MODE, (void*)&nMode, sizeof(nMode));
+			cout << "Global Shutter code retour (0 = success) = " << nRet << endl;
+		}
+		else{
+			cout << "Global Shutter pas supporte" << endl;
+			exit(1);
+		}
+	}
+}
+
+void loadExposureSeq(String path, vector<Mat>& images, vector<float>& times){
+	//path = "C:/Users/Bergil/Stage Lunette - version Windows/Stage - LunettesVideo/res/HDR_calib-set" + std::string("/"); /// A CHANGER EN CHEMIN RELATIF
+	path = path + std::string("/"); /// A CHANGER EN CHEMIN RELATIF
+	ifstream list_file((path + "expositionTimes.txt").c_str());
+	if (list_file){
+		string name;
+		float val;
+		while (list_file >> name >> val) {
+			cout << "load image " << name << endl;
+			Mat img = imread(path + name);
+			images.push_back(img);
+			times.push_back(val);
+		}
+	} 
+	else {
+		cout << "Error load images" << endl;
+	}
+	list_file.close();
+}
+
+void Camera::enableHdrMode(){
+	int nRet = is_EnableHdr(hCam, IS_ENABLE_HDR);
+	if (nRet != IS_SUCCESS){
+		cout << "Invalid HDR Mode IDS for this device, error code = " << nRet << endl;
+		cout << "HDR Mode OpenCV activated" << endl;
+		//Vérification du ShutterMode
+		int nMode;
+		is_DeviceFeature(hCam, IS_DEVICE_FEATURE_CMD_GET_SHUTTER_MODE, (void*)&nMode, sizeof(nMode));
+		if (nMode != IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_GLOBAL){
+			nMode = IS_DEVICE_FEATURE_CAP_SHUTTER_MODE_GLOBAL;
+			setShutterMode(nMode);
+		}
+		String path = "res/HDR_calib-set";
+		loadExposureSeq(path, images, times);
+		cout << "Initialization HDR ..." << endl;
+		calibrate = createCalibrateDebevec();
+		calibrate->process(images, response, times);
+		//merge_debevec = createMergeDebevec();
+		//tonemap = createTonemapDurand();
+		cout << "Initialization done !" << endl;
+	}
+	else {
+		cout << "not supported yet" << endl;
+	}
 }
 
 void Camera::exitCamera()
@@ -161,9 +205,9 @@ void Camera::exitCamera()
 	{
 		is_StopLiveVideo( hCam, IS_WAIT );
 		if( m_pcImageMemory != NULL )
-  			//is_FreeImageMem( hCam, m_pcImageMemory, m_nMemoryId );
+  			is_FreeImageMem( hCam, m_pcImageMemory, m_nMemoryId );
         
-		//m_pcImageMemory = NULL;
+		m_pcImageMemory = NULL;
 		is_ExitCamera( hCam );
 	}
 }

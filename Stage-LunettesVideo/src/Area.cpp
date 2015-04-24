@@ -1,5 +1,5 @@
 #include "Area.h"
-//#include "utilitaire_calibrage_HDR.h"
+#include <math.h> 
 //////////////////////////////////////////////////////////////////////////////
 /// CONSTRUCTEUR - DESTRUCTEUR
 //////////////////////////////////////////////////////////////////////////////
@@ -18,8 +18,7 @@ Area::Area(void)
 	needRemap = false;
 	hidden = false;
 	needHdr = false;
-	empty = true;
-	
+	empty = true;	
 }
 
 Area::~Area(void)
@@ -27,112 +26,116 @@ Area::~Area(void)
 }
 
 //////////////////////////////////////////////////////////////////////////////
-/// THREAD
+/// THREAD AND HDR
 //////////////////////////////////////////////////////////////////////////////
-void Area::initHDR(){
-/*	calibrate =  createCalibrateDebevec();
-	merge_debevec = createMergeDebevec();
-	tonemap =  createTonemapDurand(2.2f);
-	cout <<"create calibrate and merge ptrs ";*/
+
+int weight_func(const int Z)
+{
+	if (Z <= 128)   return Z;
+	if (Z>128 && Z<250)   return (256 - Z);
+	else return 6;
 }
 
-Mat Area::HDR(std::vector<cv::Mat>& images, std::vector<double>& times){
-
-	/*Mat response;
-	//imwrite("image1.png", images[0]);
-	//imwrite("image2.png", images[1]);
-    calibrate->process(images, response, times);
-	cout <<"done calibrate" <<endl;
-	Mat hdr;
-    merge_debevec->process(images, hdr, times, response);
-    cout <<"done merge" <<endl;
-
-    cv::Mat ldr;
-    tonemap->process(hdr, ldr);
-	//imwrite("hdr.hdr", hdr);
-	ldr = ldr * 255;
-	imwrite("ldr.png", ldr);*/
-	Mat hdr(images[0].size(), CV_8UC3); 
-	//cout <<images[0].size()<<endl;
-	//cout <<images[1].size()<<endl;
-	for(int x = images[0].cols/4; x < images[0].cols/4*2; x++){
-		for(int y = images[0].rows/4; y < images[0].rows/4*2; y++){
-
-        float PixelValue0 = images[0].at<float>(y,x)/255.f;
-        float PixelValue1 = images[1].at<float>(y,x)/255.f;
-		if(PixelValue0 < PixelValue1)
-		        hdr.at<float>(y,x) = images[1].at<float>(y,x);
-		else
-				hdr.at<float>(y,x) = images[0].at<float>(y,x);
-		}
-	}
+int create_EXR_channels_from_LDR_image(vector<Mat>images, vector<float> Te, const Mat response, float* EXRDataPtr)
+{
+	clock_t deb, fin, diff;
+	deb = clock();
+	float numerateur[3] = { 0.0, 0.0, 0.0 }, denominateur[3] = { 0.0, 0.0, 0.0 };
+	float *dataf = EXRDataPtr;
+	float *Mdataf;
+	Mdataf = dataf;
 	
-	//hdr = images[0];
-	return hdr;
- 
-}
+	int i, j, k, m, cpt = 0;
+	for (j = 0; j<images[0].rows; j++)
+	{
+		for (i = 0; i<images[0].cols; i++)//double boucle parcourant tous les pixels de l'image d'entrée
+		{
+			if (true)
+			{
+				numerateur[0] = 0.0;
+				numerateur[1] = 0.0;
+				numerateur[2] = 0.0;
+				denominateur[0] = 0.0;
+				denominateur[1] = 0.0;
+				denominateur[2] = 0.0;
+				for (k = 0; k<images.size(); k++)//boucle traitant les N images d'entrée
+				{
+					for (m = 0; m<3; m++)//boucle traitant les 3 canaux
+					{
+						numerateur[m] += weight_func(images[k].at<Vec3b>(j, i)[m])*(response.at<float>((int)images[k].at<Vec3b>(j, i)[m]) - log(Te[k]));
+						denominateur[m] += weight_func(images[k].at<Vec3b>(j, i)[m]);
+					}
+				}
 
+				if (denominateur[0] == 0.0)
+					dataf[2] = 0;
+				else
+					dataf[2] = exp(numerateur[0] / denominateur[0]);
 
-void remapThreadFunction(Area* r){
-	/*cv::cuda::GpuMat srcGpu;
-	INT nMemID = 0;
-	char *pBuffer = NULL;
-	int nRet, count = 0;
-	while(!r->needClose) {
-		
-		nRet = is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
-		srcGpu = (r->getCamFrame());
-		nRet = is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
+				if (denominateur[1] == 0.0)
+					dataf[1] = 0;
+				else
+					dataf[1] = exp(numerateur[1] / denominateur[1]);
 
-		cv::cuda::GpuMat dstGpu(r->getDisplaySize(),srcGpu.type());	
-				
-		if(r->needRemap && r->matrix!=NULL) {
-			r->matrixMutex.lock();
-			cv::cuda::remap(srcGpu,dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),cv::INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
-			r->matrixMutex.unlock();
-		} else {
-			cv::cuda::resize(srcGpu,dstGpu,r->getDisplaySize());
+				if (denominateur[2] == 0.0)
+					dataf[0] = 0;
+				else
+					dataf[0] = exp(numerateur[2] / denominateur[2]);
+				dataf += 3;
+			}
+
+			else
+			{
+				k = images.size() / 2;
+				for (m = 0; m<3; m++)//boucle traitant les 3 canaux
+				{
+					numerateur[m] = weight_func(images[k].at<Vec3b>(j, i)[m]) - log(Te[k]);
+				}
+				dataf[0] = exp(numerateur[2]);
+				dataf[1] = exp(numerateur[1]);
+				dataf[2] = exp(numerateur[0]);
+				dataf += 3;
+			}
 		}
-		r->frameMutex.lock();
-		dstGpu.copyTo((r->currentFrame));
-		r->empty = false;
-		r->frameMutex.unlock();
-		
 	}
-	r->camera->exitCamera();
-	* */
+
+	EXRDataPtr = Mdataf;
+	fin = clock();
+	printf("create_HDR : %d ms\n", (int)(fin - deb));
+	return 0;
+}//*/
+
+
+cv::Mat Area::HDR(std::vector<cv::Mat>& images, std::vector<float>& times){
+
+	Mat hdr(camera->height, camera->width, CV_8UC3);
+	/*cv::Ptr<cv::MergeDebevec> merge_debevec = createMergeDebevec();
+	cv::Ptr<cv::TonemapDurand> tonemap = createTonemapDurand(2.2);
+	merge_debevec->process(images, hdr, times, camera->getResponse());
+	tonemap->process(hdr, ldr);
+	ldr = ldr * 255;
+	imwrite("ldrobtenu32f.png", ldr);
+	Mat result;
+	ldr.convertTo(result, CV_8UC3);
+	imwrite("ldrobtenu8u.png", result);*/
+
+	return hdr;
 }
 
 void Area::setHdrThreadFunction(){
-	/*int numSequence = -1;
-	while(imagesHdr.size() < 2){ //onveut deux images pour HDR
-		UEYEIMAGEINFO ImageInfo;
-		INT nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId, &ImageInfo, sizeof(ImageInfo));
-		//AOI_SEQUENCE_PARAMS Param;
-		//is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_GET_PARAMS, (void*)&Param, sizeof(Param));
-		cv::Mat areaFrame(camera->height,camera->width,CV_8UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel/8)); // last param = number of bytes by cols
-		if(numSequence == -1){
-			numSequence= ImageInfo.wAOIIndex;
-			imagesHdr.push_back(areaFrame);
-			timesExpo.push_back(8);
-			//cout<<"temps d'expo : "<<timesExpo[0]<<endl;
-		}
-		else if(numSequence != ImageInfo.wAOIIndex){
-			//cout<<"Numeros de sequence = "<<numSequence<<" et "<< ImageInfo.wAOIIndex<<endl;
-			imagesHdr.push_back(areaFrame);
-			timesExpo.push_back(12);
-			//matHDR = HDR(imagesHdr, timesExpo);
-			matHDR = imagesHdr[1];
-			//cout<<"upload"<<endl;
-			//imwrite("HDR.png",matHDR);
-		}
+	cv::Mat areaFrame(camera->height, camera->width, CV_8UC3);
+	int numSequence = -1;
+	UEYEIMAGEINFO ImageInfo;
+	while(imagesHdr.size() < 2){ //on veut deux images pour HDR
+		getCamFrame(areaFrame, numSequence);
+		imagesHdr.push_back(areaFrame.clone()); ///Clone très important, c'est une nouvelle mat qu'on veut
 	}
+
+	timesExpo.push_back(0.005);
+	timesExpo.push_back(0.015);
+	matHDR = HDR(imagesHdr, timesExpo);
 	imagesHdr.clear();
 	timesExpo.clear();
-	*/
-	
-	//calibrate_camera_for_HDR(ldrImages, imNb, expTimes, imNb, 20);
-	//create_EXR_RGB_image_from_LDR_image(ldrImages, expTimes, imNb, gfunction,ldrImages[0]->width, ldrImages[0]->height, saveFilePath);
 	
 }
 
@@ -158,23 +161,53 @@ void Area::initSequenceAOI(){
 	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
 	is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
 	
-	nMask = IS_AOI_SEQUENCE_INDEX_AOI_1 |
-                IS_AOI_SEQUENCE_INDEX_AOI_2;
-
-    // enable sequence mode
+	nMask = IS_AOI_SEQUENCE_INDEX_AOI_1 | IS_AOI_SEQUENCE_INDEX_AOI_2;
+	// enable sequence mode
     is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask));
-	
 }
 
+void Area::disableSequenceAOI(){
+	double pParam = 10;
+	INT nMask = 0;
+	is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask)); //Stop Sequence HDR
+	is_Exposure(camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*)&pParam, sizeof(pParam));
+}
+
+void  Area::getCamFrame( cv::Mat& frame, int& numSequence )
+{
+	UEYEIMAGEINFO ImageInfo;
+	int nRet, pbo = 0;
+	if (numSequence == -1){
+		do {
+			is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
+			is_LockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
+			nRet = is_IsVideoFinish(camera->hCam, &pbo);
+			nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId, &ImageInfo, sizeof(ImageInfo));
+		} while ((pbo != IS_VIDEO_FINISH));
+		//cout << "pbo = : " << pbo << endl;
+		numSequence = ImageInfo.wAOIIndex;
+	}
+	else {
+		do {
+			is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
+			nRet = is_IsVideoFinish(camera->hCam, &pbo);
+			nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId, &ImageInfo, sizeof(ImageInfo));
+		} while (pbo != IS_VIDEO_FINISH || ImageInfo.wAOIIndex == numSequence );
+		//cout << "pbo = : " << pbo << endl;
+		is_LockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
+	}
+	frame = cv::Mat(camera->height, camera->width, CV_8UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
+	is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
+}
+
+/////NOT USED ANYMORE /////
 void Area::startThread()
 {
 	// If the area is a color area, we dont need a thread !
 	if(type == CAMERA) {
 		needClose = false;
 		currentFrame.create(camera->getSize().height,camera->getSize().width,CV_16UC3);
-		invalidate();	// If needed, compute the remap matrix
-		remapThread = std::thread(remapThreadFunction, this);          
-		remapThread.detach();
+		invalidate();	// If needed, compute the remap matrix   
 	}
 }
 
@@ -184,6 +217,8 @@ void Area::stopThread() {
 		remapThread.join();
 	}
 }
+
+/////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 /// AREA PROPERTIES
@@ -228,8 +263,6 @@ void Area::HideAndShow()
 	//Hide the video stream
 	hidden = !hidden;
 }
-
-
 
 //////////////////////////////////////////////////////////////////////////////
 /// GET
@@ -290,33 +323,6 @@ cv::Rect& Area::getRect(AreaType t)
 		return displayZone;
 		break;
 	}
-}
-
-cv::cuda::GpuMat  Area::getCamFrame(char * pBuffer)
-{
-	
-	cv::Mat frame(camera->height,camera->width,CV_16UC3,pBuffer, camera->width*(camera->m_bitsPerPixel/16)); // last param = number of bytes by cols
-	cv::cuda::GpuMat frameGpu;
-	frameGpu.upload(frame);
-	if(needCrop) {
-		cv::cuda::GpuMat frameRect(frameGpu, cameraROI);
-		return frameRect;
-	}
-	else 
-		return frameGpu;
-}
-cv::cuda::GpuMat  Area::getCamFrame()
-{
-	cv::Mat frame(camera->height,camera->width,CV_16UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel/16)); // last param = number of bytes by cols
-	cv::cuda::GpuMat frameGpu;
-	
-	frameGpu.upload(frame);
-	if(needCrop) {
-		cv::cuda::GpuMat frameRect(frameGpu, cameraROI);
-		return frameRect;
-	}
-	else 
-		return frameGpu;
 }
 
 int Area::getWidth(AreaType t)

@@ -22,11 +22,8 @@ public:
 	
 	//For HDR 
 	std::vector<cv::Mat> imagesHdr; 
-	std::vector<double> timesExpo;
+	std::vector<float> timesExpo;
 	cv::Mat matHDR;
-	//cv::Ptr<cv::CalibrateDebevec> calibrate;
-	//cv::Ptr<cv::MergeDebevec> merge_debevec;
-	//cv::Ptr<cv::Tonemap> tonemap;
 	
 	Matrix* matrix;			// Remap matrix
 	cv::Rect displayZone;	
@@ -62,15 +59,14 @@ public:
 	cv::Rect getDisplayRect();
 	cv::Rect getCameraCropRect();
 	cv::Rect getCentralZoneRect();
-	cv::cuda::GpuMat  getCamFrame(char * pBuffer);
-	cv::cuda::GpuMat  getCamFrame();
+	void getCamFrame(cv::Mat& frame, int& numSequence);
 	cv::Rect& getRect(AreaType t);
 	void HideAndShow();
-	
-	void initHDR();
+
 	void setHdrThreadFunction();
-	cv::Mat HDR(std::vector<cv::Mat>& images, std::vector<double>& times);
+	cv::Mat HDR(std::vector<cv::Mat>& images, std::vector<float>& times);
 	void initSequenceAOI();
+	void disableSequenceAOI();
 
 	int getWidth(AreaType t);
 	int getHeight(AreaType t);

@@ -74,8 +74,6 @@ private:
 	
 	UEYE_CAMERA_LIST* pucl;
 	void blendAreasZones(cv::Mat& img);
-
-
 	int currentAreaRectangle;
 
 	//Prototypes

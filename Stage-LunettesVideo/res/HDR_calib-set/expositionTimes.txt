@@ -1,0 +1,13 @@
+calib-set00.JPG 2				
+calib-set01.JPG 1				
+calib-set02.JPG 0.5 			
+calib-set03.JPG 0.25 			
+calib-set04.JPG 0.125 			
+calib-set05.JPG 0.0666			
+calib-set06.JPG 0.0333	
+calib-set07.JPG 0.01666	
+calib-set08.JPG 0.008		
+calib-set09.JPG 0.004		
+calib-set10.JPG 0.002		
+calib-set11.JPG 0.001	
+calib-set12.JPG 0.0005	

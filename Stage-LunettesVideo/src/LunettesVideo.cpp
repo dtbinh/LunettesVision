@@ -141,6 +141,30 @@ void LunettesVideo::stopRemapThreads()
 /// MAIN LOOP
 //////////////////////////////////////////////////////////////////////////////
 
+string type2str(int type) {
+	string r;
+
+	uchar depth = type & CV_MAT_DEPTH_MASK;
+	uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+	switch (depth) {
+	case CV_8U:  r = "8U"; break;
+	case CV_8S:  r = "8S"; break;
+	case CV_16U: r = "16U"; break;
+	case CV_16S: r = "16S"; break;
+	case CV_32S: r = "32S"; break;
+	case CV_32F: r = "32F"; break;
+	case CV_64F: r = "64F"; break;
+	default:     r = "User"; break;
+	}
+
+	r += "C";
+	r += (chans + '0');
+
+	return r;
+}
+
+
 void LunettesVideo::run() {
 	///// DISPLAY THREAD /////
 	
@@ -152,109 +176,97 @@ void LunettesVideo::run() {
 		return;
 	}
 	int nbArea = currentProfile->listArea.size();
-	int frame = 0;
-	double pParam;
-	int key = 0;
-	void *pLast;
-	int pbo = 0;
-	int nRet;
-	long pIntr, pActIntr;
+	const int temp = nbArea;
+	int frame = 0, key = 0, pbo = 0, nRet;
 	Mat finalFrame(resY, resX,CV_8UC3,Scalar(0,0,0));
 	setWindowsParams();
 	/// START LOOP ///
 	//////////////////////////////////////////////////////////
 	cout<<"nb d'area = "<<nbArea<<endl;
-	cv::cuda::GpuMat listMat[2]; //nbArea
+	cv::cuda::GpuMat* listMat = new cv::cuda::GpuMat[nbArea]; //nbArea
 	for(int i = 0; i < nbArea; i++){
 		Area* r = currentProfile->listArea.at(i);
-		r->initHDR();
 		//r->initSequenceAOI();
 		cout<<" Area "<<i<<endl;
 	}
 	
 	myTimer->start();
 	cout<<"Debut Boucle Acquisition"<<endl;
-	std::thread HdrThread[2]; //nbArea
+	std::thread* HdrThread = new std::thread[nbArea]; //nbArea
 	do {
 		// Benchmark stuff
 		if(frame>FRAMES_COUNT && TEST_MODE) break;
 		frame ++;
 		
 		currentProfileMutex.lock();
-		
 		//capture des cv::Mat dans une première boucle pour accélerer processus
 		
 		for (int i = 0; i < nbArea; i++) {
 			Area* r = currentProfile->listArea.at(i);
 			if (changeExposure){
 				if (!needHdr) {
-					pParam = 10;
-					INT nMask = 0;
-					is_AOI(r->camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask)); //Stop Sequence HDR
-					is_Exposure(r->camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*)&pParam, sizeof(pParam));
-				}
-				else{
+					r->disableSequenceAOI();
+				} else {
 					r->initSequenceAOI();
 				}
 			}
 			if (r->type == Area::CAMERA) {
-				is_GetImageMem(r->camera->hCam, &pLast);
-				is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)pLast);
-				is_IsVideoFinish(r->camera->hCam, &pbo);
-				while (pbo != 1){ //1 = IS_VIDEO_FINISH
-					is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)pLast);
-					is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)pLast);
-					is_IsVideoFinish(r->camera->hCam, &pbo);
-				}
-				is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)pLast);
+
 				if (needHdr){
 					HdrThread[i] = std::thread(&Area::setHdrThreadFunction, r); //Démarrage des threads HDR
-
-				}
-				else{
-					cv::Mat areaFrame(r->camera->height, r->camera->width, CV_8UC3, pLast, r->camera->width*(r->camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
+					//r->setHdrThreadFunction();
+				} else {
+					do {
+						is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
+						is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
+						nRet = is_IsVideoFinish(r->camera->hCam, &pbo);
+					} while (pbo != IS_VIDEO_FINISH); // = IS_VIDEO_FINISH
+					//cout << "pbo = : " << pbo << endl;
+					cv::Mat areaFrame(r->camera->height, r->camera->width, CV_8UC3, r->camera->m_pcImageMemory, r->camera->width*(r->camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
 					listMat[i].upload(areaFrame);
+					is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)r->camera->m_pcImageMemory);
 				}
-				is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)pLast);
-			}
-			if (needHdr){
-				for (int i = 0; i < nbArea; i++){
-					Area* r = currentProfile->listArea.at(i);
-					HdrThread[i].join(); //On attend la fin des threads
-					listMat[i].upload(r->matHDR);
-				}
+
 			}
 		}
-		changeExposure = false;
-		
-		for(int i = 0;i<nbArea;i++) {
+		if (needHdr){
+			for (int i = 0; i < nbArea; i++){
+				Area* r = currentProfile->listArea.at(i);
+				HdrThread[i].join(); //On attend la fin des threads
+				listMat[i].upload(r->matHDR);
+			}
+		}
+		changeExposure = false;	
+		for (int i = 0; i < nbArea; i++) {
 			Area* r = currentProfile->listArea.at(i);
 			if(!r->hidden) {
-
 				// Blend !
 				if(r->type == Area::CAMERA) {
 					if(r->needCrop) {
 						cv::cuda::GpuMat frameRect(listMat[i], r->cameraROI);
 						listMat[i]= frameRect;
 					}
-					cv::cuda::GpuMat dstGpu(r->getDisplaySize(),listMat[i].type());	
+					cv::cuda::GpuMat dstGpu(r->getDisplaySize(),finalFrame.type());	
 					
 					if(r->needRemap && r->matrix!=NULL) {
 						r->matrixMutex.lock();
 						cv::cuda::remap(listMat[i],dstGpu,r->matrix->getGpuXmat(),r->matrix->getGpuYmat(),cv::INTER_LINEAR,cv::BORDER_CONSTANT, cv::Scalar(0,0,0));
 						r->matrixMutex.unlock();
 					} else {
+						/*string t1 = type2str(listMat[i].type());
+						cout << t1 << " = listMat[i].type()" << endl;
+						t1 = type2str(dstGpu.type());
+						cout << t1 << " = dstGpu.type()" << endl;*/
 						cv::cuda::resize(listMat[i],dstGpu,r->getDisplaySize());
-					}				
+						//cout << "rezise ok" << endl;
+					}
 					dstGpu.download(finalFrame(r->getDisplayRect()));
-					
+					//cout << "fin traitement" << endl;
 				} else {
 					cv::rectangle(finalFrame,r->displayZone,r->color,cv::FILLED);
 				}
 			}
-			
 		}
-		
 		// On Screen Display features
 		///////////////////////////////////////////
 		std::ostringstream oss117;
@@ -298,7 +310,6 @@ void LunettesVideo::blendAreasZones(Mat &img)
 	{
 		Area* r = currentProfile->listArea.at(i);
 		Scalar s1(0,0,255), s2(255,0,0);
-
 		if(i == (int)(currentAreaRectangle/2))
 		{
 			if(currentAreaRectangle%2 == 0)
