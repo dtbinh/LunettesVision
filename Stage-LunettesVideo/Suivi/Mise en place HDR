@@ -1,4 +1,4 @@
- 
+﻿ 
 Mise en placede la HDR : 
  
 Utiliser les fonctions HDR des cameras uEye si possible (suivant modèle), sinon :
@@ -50,3 +50,30 @@ if (changeExposure){
 
 - Ne pas utiliser la technique d'OpenCv : la recherche de la fonction de réponse et le calcul sont beaucoup trop longs, on veut du temps réel.
 
+EDIT : FAUX ! Elle marche très bien, faut juste savoir travailler ! Commencer par initialiser une matrice Response gràçe à la fonction process de l'objet CalibrateDebevec d'opencv 3.0,
+en utilisant la séquence d'image et le fichier de temps d'expo présent dans le dossier res/HDR_calib-set.
+Fonction de chargement : 
+
+void loadExposureSeq(String path, vector<Mat>& images, vector<float>& times){
+	path = path + std::string("/"); 
+	ifstream list_file((path + "expositionTimes.txt").c_str());
+	if (list_file){
+		string name;
+		float val;
+		while (list_file >> name >> val) {
+			cout << "load image " << name << endl;
+			Mat img = imread(path + name);
+			images.push_back(img);
+			times.push_back(val);
+		}
+	} 
+	else {
+		cout << "Error load images" << endl;
+	}
+	list_file.close();
+}
+
+Ensuite, utiliser les objet merge_debevec et Tonemap, puis convertir le résultat dans le bon format, en multipliant les valeurs de la matrice par 255 (on a des valeurs entre 0 et 1)
+camera->merge_debevec->process(images, hdr, times, camera->getResponse());
+camera->tonemap->process(hdr, ldr);
+ldr.convertTo(result, CV_8UC3, 255);

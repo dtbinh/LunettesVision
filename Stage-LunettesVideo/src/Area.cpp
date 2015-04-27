@@ -6,6 +6,26 @@
 using namespace cv;
 using namespace std;
 
+//Preuve que OPENCV marche !
+void loadExposure(String path, vector<Mat>& images, vector<float>& times){
+	path = path + std::string("/"); /// A CHANGER EN CHEMIN RELATIF
+	ifstream list_file((path + "expositionTimes.txt").c_str());
+	if (list_file){
+		string name;
+		float val;
+		while (list_file >> name >> val) {
+			//cout << "load image " << name << endl;
+			Mat img = imread(path + name);
+			images.push_back(img);
+			times.push_back(val);
+		}
+	}
+	else {
+		cout << "Error load images" << endl;
+	}
+	list_file.close();
+}
+
 
 Area::Area(void)
 {
@@ -19,6 +39,8 @@ Area::Area(void)
 	hidden = false;
 	needHdr = false;
 	empty = true;	
+
+	
 }
 
 Area::~Area(void)
@@ -36,53 +58,49 @@ int weight_func(const int Z)
 	else return 6;
 }
 
-int create_EXR_channels_from_LDR_image(vector<Mat>images, vector<float> Te, const Mat response, float* EXRDataPtr)
+int create_EXR_channels_from_LDR_image(vector<Mat> &images, vector<float>& Te, const Mat& response, Mat& hdr)
 {
 	clock_t deb, fin, diff;
 	deb = clock();
 	float numerateur[3] = { 0.0, 0.0, 0.0 }, denominateur[3] = { 0.0, 0.0, 0.0 };
-	float *dataf = EXRDataPtr;
-	float *Mdataf;
-	Mdataf = dataf;
 	
 	int i, j, k, m, cpt = 0;
 	for (j = 0; j<images[0].rows; j++)
 	{
 		for (i = 0; i<images[0].cols; i++)//double boucle parcourant tous les pixels de l'image d'entrée
 		{
-			if (true)
-			{
+			//if (true)
+			//{
 				numerateur[0] = 0.0;
 				numerateur[1] = 0.0;
 				numerateur[2] = 0.0;
 				denominateur[0] = 0.0;
 				denominateur[1] = 0.0;
 				denominateur[2] = 0.0;
-				for (k = 0; k<images.size(); k++)//boucle traitant les N images d'entrée
+				for (k = 0; k < images.size(); k++)//boucle traitant les N images d'entrée
 				{
 					for (m = 0; m<3; m++)//boucle traitant les 3 canaux
 					{
-						numerateur[m] += weight_func(images[k].at<Vec3b>(j, i)[m])*(response.at<float>((int)images[k].at<Vec3b>(j, i)[m]) - log(Te[k]));
-						denominateur[m] += weight_func(images[k].at<Vec3b>(j, i)[m]);
+						numerateur[m] += weight_func(images[k].at<Vec3f>(j, i)[m])*(response.at<float>((int)images[k].at<Vec3b>(j, i)[m]) - log(Te[k]));
+						denominateur[m] += weight_func(images[k].at<Vec3f>(j, i)[m]);
 					}
 				}
 
 				if (denominateur[0] == 0.0)
-					dataf[2] = 0;
+					hdr.at<Vec3f>(j,i)[2] = 0;
 				else
-					dataf[2] = exp(numerateur[0] / denominateur[0]);
+					hdr.at<Vec3f>(j, i)[2] = exp(numerateur[0] / denominateur[0]);
 
 				if (denominateur[1] == 0.0)
-					dataf[1] = 0;
+					hdr.at<Vec3f>(j, i)[1] = 0;
 				else
-					dataf[1] = exp(numerateur[1] / denominateur[1]);
+					hdr.at<Vec3f>(j, i)[1] = exp(numerateur[1] / denominateur[1]);
 
 				if (denominateur[2] == 0.0)
-					dataf[0] = 0;
+					hdr.at<Vec3f>(j, i)[0] = 0;
 				else
-					dataf[0] = exp(numerateur[2] / denominateur[2]);
-				dataf += 3;
-			}
+					hdr.at<Vec3f>(j, i)[0] = exp(numerateur[2] / denominateur[2]);
+			/*}
 
 			else
 			{
@@ -91,58 +109,62 @@ int create_EXR_channels_from_LDR_image(vector<Mat>images, vector<float> Te, cons
 				{
 					numerateur[m] = weight_func(images[k].at<Vec3b>(j, i)[m]) - log(Te[k]);
 				}
-				dataf[0] = exp(numerateur[2]);
-				dataf[1] = exp(numerateur[1]);
-				dataf[2] = exp(numerateur[0]);
-				dataf += 3;
-			}
+				hdr.at<Vec3f>(j, i)[0] = exp(numerateur[2]);
+				hdr.at<Vec3f>(j, i)[1] = exp(numerateur[1]);
+				hdr.at<Vec3f>(j, i)[2] = exp(numerateur[0]);
+			}*/
 		}
 	}
-
-	EXRDataPtr = Mdataf;
 	fin = clock();
 	printf("create_HDR : %d ms\n", (int)(fin - deb));
 	return 0;
-}//*/
+}
 
 
-cv::Mat Area::HDR(std::vector<cv::Mat>& images, std::vector<float>& times){
+cv::Mat Area::HDR(const std::vector<cv::Mat>& images, const std::vector<float>& times){
 
-	Mat hdr(camera->height, camera->width, CV_8UC3);
-	/*cv::Ptr<cv::MergeDebevec> merge_debevec = createMergeDebevec();
-	cv::Ptr<cv::TonemapDurand> tonemap = createTonemapDurand(2.2);
-	merge_debevec->process(images, hdr, times, camera->getResponse());
-	tonemap->process(hdr, ldr);
-	ldr = ldr * 255;
-	imwrite("ldrobtenu32f.png", ldr);
-	Mat result;
-	ldr.convertTo(result, CV_8UC3);
-	imwrite("ldrobtenu8u.png", result);*/
-
-	return hdr;
+	Mat hdr, ldr, result;
+	//cout << "size vectore images = " << images.size() << endl;
+	//cout << "size vectore times = " << times.size() << endl;
+	
+	/*for (int i = 0; i < images.size(); i++){
+		std::ostringstream oss;
+		oss << "results/image" << i << ".png";
+		imwrite(oss.str(), images[i]);
+		cout << images[i].cols << " et " << times[i] << endl;
+	}*/
+	Mat response = (camera->getResponse()).clone();
+	camera->merge_debevec->process(images, hdr, times, response);
+	/*for (int i = 0; i < response.rows; i++){
+		cout << "response " << i << " = " << response.at<float>(i, 0);
+	}*/
+	//create_EXR_channels_from_LDR_image(images, times, camera->getResponse(), hdr);
+	camera->tonemap->process(hdr, ldr);
+	ldr.convertTo(result, CV_8UC3, 255);
+	//imwrite("results/imagehdr.png", result);
+	return result;
 }
 
 void Area::setHdrThreadFunction(){
 	cv::Mat areaFrame(camera->height, camera->width, CV_8UC3);
 	int numSequence = -1;
+	double time;
 	UEYEIMAGEINFO ImageInfo;
-	while(imagesHdr.size() < 2){ //on veut deux images pour HDR
-		getCamFrame(areaFrame, numSequence);
+	/*while(imagesHdr.size() < 2){ //on veut deux images pour HDR
+		getCamFrame(areaFrame, numSequence, time);
 		imagesHdr.push_back(areaFrame.clone()); ///Clone très important, c'est une nouvelle mat qu'on veut
-	}
-
-	timesExpo.push_back(0.005);
-	timesExpo.push_back(0.015);
-	matHDR = HDR(imagesHdr, timesExpo);
+		timesExpo.push_back(time);
+	}*/
+	String path = "res/HDR_calib-set";
+	loadExposure(path, imagesHdr, timesExpo);
+	HDR(imagesHdr, timesExpo).copyTo(matHDR);
 	imagesHdr.clear();
 	timesExpo.clear();
-	
 }
 
-void Area::initSequenceAOI(){
+void Area::initSequenceAOI(){	
 	
 	INT nMask = 0;
-	
 	//Parameters Initialization
 	AOI_SEQUENCE_PARAMS Param;
 	
@@ -151,13 +173,13 @@ void Area::initSequenceAOI(){
 	Param.s32NumberOfCycleRepetitions = 1;
 	Param.s32X = 0;
 	Param.s32Y = 0;
-	Param.dblExposure = 5;
+	Param.dblExposure = 8;
 	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
 	is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
 	
 	Param.s32AOIIndex = IS_AOI_SEQUENCE_INDEX_AOI_2;
 	Param.s32NumberOfCycleRepetitions = 1;
-	Param.dblExposure = 15;
+	Param.dblExposure = 12;
 	Param.s32DetachImageParameters = 1; //changes of Params does not affect others AOI
 	is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_PARAMS, (void*)&Param, sizeof(Param));
 	
@@ -173,7 +195,7 @@ void Area::disableSequenceAOI(){
 	is_Exposure(camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*)&pParam, sizeof(pParam));
 }
 
-void  Area::getCamFrame( cv::Mat& frame, int& numSequence )
+void  Area::getCamFrame( cv::Mat& frame, int& numSequence, double& time )
 {
 	UEYEIMAGEINFO ImageInfo;
 	int nRet, pbo = 0;
@@ -197,6 +219,8 @@ void  Area::getCamFrame( cv::Mat& frame, int& numSequence )
 		is_LockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
 	}
 	frame = cv::Mat(camera->height, camera->width, CV_8UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
+	is_Exposure(camera->hCam, IS_EXPOSURE_CMD_GET_EXPOSURE, &time, 8);
+
 	is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
 }
 

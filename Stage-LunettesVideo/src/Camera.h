@@ -19,7 +19,6 @@ private :
 	
 
 public:
-	const cv::Mat getResponse(){ return response; }
 	HIDS hCam;
 	HWND m_hwndDisp;
 	int cameraID;
@@ -34,11 +33,12 @@ public:
 	char* m_pcImageMemory; // camera memory - pointer to memory
 
 	//For HDR
+	const cv::Mat& getResponse ()const { return response; }
 	std::vector<cv::Mat> images; //vectors d'images et temps de calibration du capteur, pour fonction réponse
 	std::vector<float> times;
 	cv::Ptr<cv::CalibrateDebevec> calibrate;
-	//cv::Ptr<cv::MergeDebevec> merge_debevec;
-	//cv::Ptr<cv::TonemapDurand> tonemap;	
+	cv::Ptr<cv::MergeDebevec> merge_debevec;
+	cv::Ptr<cv::TonemapDurand> tonemap;
 
 	//// Prototypes ////
 	Camera(int index);

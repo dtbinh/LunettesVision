@@ -154,8 +154,7 @@ void Camera::setShutterMode(int nMode){
 }
 
 void loadExposureSeq(String path, vector<Mat>& images, vector<float>& times){
-	//path = "C:/Users/Bergil/Stage Lunette - version Windows/Stage - LunettesVideo/res/HDR_calib-set" + std::string("/"); /// A CHANGER EN CHEMIN RELATIF
-	path = path + std::string("/"); /// A CHANGER EN CHEMIN RELATIF
+	path = path + std::string("/"); 
 	ifstream list_file((path + "expositionTimes.txt").c_str());
 	if (list_file){
 		string name;
@@ -190,8 +189,8 @@ void Camera::enableHdrMode(){
 		cout << "Initialization HDR ..." << endl;
 		calibrate = createCalibrateDebevec();
 		calibrate->process(images, response, times);
-		//merge_debevec = createMergeDebevec();
-		//tonemap = createTonemapDurand();
+		merge_debevec = createMergeDebevec();
+		tonemap = createTonemapDurand(2.2f);
 		cout << "Initialization done !" << endl;
 	}
 	else {

@@ -59,12 +59,12 @@ public:
 	cv::Rect getDisplayRect();
 	cv::Rect getCameraCropRect();
 	cv::Rect getCentralZoneRect();
-	void getCamFrame(cv::Mat& frame, int& numSequence);
+	void getCamFrame(cv::Mat& frame, int& numSequence, double& time);
 	cv::Rect& getRect(AreaType t);
 	void HideAndShow();
 
 	void setHdrThreadFunction();
-	cv::Mat HDR(std::vector<cv::Mat>& images, std::vector<float>& times);
+	cv::Mat HDR(const std::vector<cv::Mat>& images, const std::vector<float>& times);
 	void initSequenceAOI();
 	void disableSequenceAOI();
 
