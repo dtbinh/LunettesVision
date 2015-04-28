@@ -58,11 +58,12 @@ int weight_func(const int Z)
 	else return 6;
 }
 
-int create_EXR_channels_from_LDR_image(vector<Mat> &images, vector<float>& Te, const Mat& response, Mat& hdr)
+cv::Mat create_EXR_channels_from_LDR_image(vector<Mat> images, vector<float> Te, const Mat& response)
 {
 	clock_t deb, fin, diff;
 	deb = clock();
 	float numerateur[3] = { 0.0, 0.0, 0.0 }, denominateur[3] = { 0.0, 0.0, 0.0 };
+	Mat hdr(images[0].rows, images[0].cols, CV_16UC3);
 	
 	int i, j, k, m, cpt = 0;
 	for (j = 0; j<images[0].rows; j++)
@@ -85,7 +86,6 @@ int create_EXR_channels_from_LDR_image(vector<Mat> &images, vector<float>& Te, c
 						denominateur[m] += weight_func(images[k].at<Vec3f>(j, i)[m]);
 					}
 				}
-
 				if (denominateur[0] == 0.0)
 					hdr.at<Vec3f>(j,i)[2] = 0;
 				else
@@ -114,16 +114,20 @@ int create_EXR_channels_from_LDR_image(vector<Mat> &images, vector<float>& Te, c
 				hdr.at<Vec3f>(j, i)[2] = exp(numerateur[0]);
 			}*/
 		}
+		cout << j << " " << i << endl;
 	}
+	cout << "fin" << endl;
+	hdr.convertTo(hdr, CV_8UC3);
 	fin = clock();
 	printf("create_HDR : %d ms\n", (int)(fin - deb));
-	return 0;
+	return hdr;
 }
 
 
 cv::Mat Area::HDR(const std::vector<cv::Mat>& images, const std::vector<float>& times){
 
-	Mat hdr, ldr, result;
+	Mat hdr, ldr;
+	cv::Mat result(camera->height, camera->width, CV_8UC3);
 	//cout << "size vectore images = " << images.size() << endl;
 	//cout << "size vectore times = " << times.size() << endl;
 	
@@ -133,30 +137,56 @@ cv::Mat Area::HDR(const std::vector<cv::Mat>& images, const std::vector<float>& 
 		imwrite(oss.str(), images[i]);
 		cout << images[i].cols << " et " << times[i] << endl;
 	}*/
-	Mat response = (camera->getResponse()).clone();
-	camera->merge_debevec->process(images, hdr, times, response);
-	/*for (int i = 0; i < response.rows; i++){
-		cout << "response " << i << " = " << response.at<float>(i, 0);
-	}*/
-	//create_EXR_channels_from_LDR_image(images, times, camera->getResponse(), hdr);
+	Mat image0, image1;
+	cvtColor(images[0], image0, CV_BGR2GRAY);
+	cvtColor(images[1], image1, CV_BGR2GRAY);
+	for (int j = 0; j < image0.rows; j++)
+	{
+		for (int i = 0; i < image0.cols; i++)//double boucle parcourant tous les pixels de l'image d'entrée
+		{
+			if (image0.at<uchar>(j, i) > image1.at<uchar>(j, i)){
+				if (image0.at<uchar>(j, i) > 200){
+					result.at<Vec3b>(j, i) = images[1].at<Vec3b>(j, i);
+				}
+				else{
+					result.at<Vec3b>(j, i) = images[0].at<Vec3b>(j, i);
+				}
+			}
+			else {
+				if (image1.at<uchar>(j, i) > 200){
+					result.at<Vec3b>(j, i) = images[0].at<Vec3b>(j, i);
+				}
+				else{
+					result.at<Vec3b>(j, i) = images[1].at<Vec3b>(j, i);
+				}
+			}
+		}
+	}
+	///VRAI HDR
+	/*Mat response = (camera->getResponse()).clone();
+	//camera->merge_debevec->process(images, hdr, times, response);
+	hdr = create_EXR_channels_from_LDR_image(images, times, response);
 	camera->tonemap->process(hdr, ldr);
-	ldr.convertTo(result, CV_8UC3, 255);
+	ldr.convertTo(result, CV_8UC3, 255);*/
 	//imwrite("results/imagehdr.png", result);
+	///////////
+
 	return result;
 }
+
 
 void Area::setHdrThreadFunction(){
 	cv::Mat areaFrame(camera->height, camera->width, CV_8UC3);
 	int numSequence = -1;
 	double time;
 	UEYEIMAGEINFO ImageInfo;
-	/*while(imagesHdr.size() < 2){ //on veut deux images pour HDR
+	while(imagesHdr.size() < 2){ //on veut deux images pour HDR
 		getCamFrame(areaFrame, numSequence, time);
 		imagesHdr.push_back(areaFrame.clone()); ///Clone très important, c'est une nouvelle mat qu'on veut
 		timesExpo.push_back(time);
-	}*/
-	String path = "res/HDR_calib-set";
-	loadExposure(path, imagesHdr, timesExpo);
+	}
+	/*String path = "res/HDR_calib-set";
+	loadExposure(path, imagesHdr, timesExpo);*/
 	HDR(imagesHdr, timesExpo).copyTo(matHDR);
 	imagesHdr.clear();
 	timesExpo.clear();
@@ -192,6 +222,7 @@ void Area::disableSequenceAOI(){
 	double pParam = 10;
 	INT nMask = 0;
 	is_AOI(camera->hCam, IS_AOI_SEQUENCE_SET_ENABLE, (void*)&nMask, sizeof(nMask)); //Stop Sequence HDR
+	//is_Exposure(camera->hCam, IS_EXPOSURE_CMD_GET_EXPOSURE_DEFAULT, (void*)&pParam, sizeof(pParam));
 	is_Exposure(camera->hCam, IS_EXPOSURE_CMD_SET_EXPOSURE, (void*)&pParam, sizeof(pParam));
 }
 
@@ -199,8 +230,11 @@ void  Area::getCamFrame( cv::Mat& frame, int& numSequence, double& time )
 {
 	UEYEIMAGEINFO ImageInfo;
 	int nRet, pbo = 0;
+	int pnNum;
+	char * ppcMem;
+	char * ppcMemLast;
 	if (numSequence == -1){
-		do {
+		/*do {
 			is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
 			is_LockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
 			nRet = is_IsVideoFinish(camera->hCam, &pbo);
@@ -208,20 +242,43 @@ void  Area::getCamFrame( cv::Mat& frame, int& numSequence, double& time )
 		} while ((pbo != IS_VIDEO_FINISH));
 		//cout << "pbo = : " << pbo << endl;
 		numSequence = ImageInfo.wAOIIndex;
+		*/
+		is_GetActSeqBuf(camera->hCam, &pnNum, &ppcMem, &ppcMemLast);
+		is_LockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, ppcMemLast);
+		if (ppcMemLast == camera->m_pcImageMemory[0]){
+			nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId[0], &ImageInfo, sizeof(ImageInfo));
+		}
+		else {
+			nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId[1], &ImageInfo, sizeof(ImageInfo));
+		}
+		numSequence = ImageInfo.wAOIIndex;
 	}
 	else {
-		do {
+		/*do {
 			is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
 			nRet = is_IsVideoFinish(camera->hCam, &pbo);
 			nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId, &ImageInfo, sizeof(ImageInfo));
 		} while (pbo != IS_VIDEO_FINISH || ImageInfo.wAOIIndex == numSequence );
 		//cout << "pbo = : " << pbo << endl;
 		is_LockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
+		*/
+		do {
+			is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, ppcMemLast);
+			is_GetActSeqBuf(camera->hCam, &pnNum, &ppcMem, &ppcMemLast);
+			is_LockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, ppcMemLast);
+			if (ppcMemLast == camera->m_pcImageMemory[0]){
+				nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId[0], &ImageInfo, sizeof(ImageInfo));
+			}
+			else {
+				nRet = is_GetImageInfo(camera->hCam, camera->m_nMemoryId[1], &ImageInfo, sizeof(ImageInfo));
+			}
+		} while (ImageInfo.wAOIIndex == numSequence);
 	}
-	frame = cv::Mat(camera->height, camera->width, CV_8UC3, camera->m_pcImageMemory, camera->width*(camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
+	frame = cv::Mat(camera->height, camera->width, CV_8UC3, ppcMemLast, camera->width*(camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
 	is_Exposure(camera->hCam, IS_EXPOSURE_CMD_GET_EXPOSURE, &time, 8);
 
-	is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, camera->m_pcImageMemory);
+	is_UnlockSeqBuf(camera->hCam, IS_IGNORE_PARAMETER, ppcMemLast);
+
 }
 
 /////NOT USED ANYMORE /////

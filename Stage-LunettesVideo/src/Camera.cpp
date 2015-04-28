@@ -73,13 +73,23 @@ Camera::Camera(int index)
 		is_GetSensorInfo(hCam, &m_sInfo);
 		getMaxImageSize(&width, &height);
 		// allocate an image memory.
-		if (is_AllocImageMem(hCam, width, height, m_bitsPerPixel, &m_pcImageMemory, &m_nMemoryId) != IS_SUCCESS)
+		/*if (is_AllocImageMem(hCam, width, height, m_bitsPerPixel, &m_pcImageMemory, &m_nMemoryId) != IS_SUCCESS)
 		{
 				cout<<"Memory allocation failed!"<<endl;
 				active = false;	
-				return ;
+				exit(1) ;
 		}
-		is_SetImageMem(hCam, m_pcImageMemory, m_nMemoryId);
+		is_SetImageMem(hCam, m_pcImageMemory, m_nMemoryId);*/
+
+		for (int i = 0; i < NbImageMem; i++){
+			if (is_AllocImageMem(hCam, width, height, m_bitsPerPixel, &m_pcImageMemory[i], &m_nMemoryId[i]) != IS_SUCCESS)
+			{
+				cout << "Memory allocation failed!" << endl;
+				active = false;
+				exit(1);
+			}
+			is_AddToSequence(hCam, m_pcImageMemory[i], m_nMemoryId[i]); 
+		}
 		// set the image size to capture
 
 		IS_SIZE_2D imageSize;
@@ -203,10 +213,16 @@ void Camera::exitCamera()
 	if( hCam != 0 )
 	{
 		is_StopLiveVideo( hCam, IS_WAIT );
-		if( m_pcImageMemory != NULL )
+		/*if( m_pcImageMemory != NULL )
   			is_FreeImageMem( hCam, m_pcImageMemory, m_nMemoryId );
         
-		m_pcImageMemory = NULL;
+		m_pcImageMemory = NULL;*/
+		for (int i = 0; i < NbImageMem; i++){
+			if (m_pcImageMemory[i] != NULL)
+				is_FreeImageMem(hCam, m_pcImageMemory[i], m_nMemoryId[i]);
+
+			m_pcImageMemory[i] = NULL;
+		}
 		is_ExitCamera( hCam );
 	}
 }

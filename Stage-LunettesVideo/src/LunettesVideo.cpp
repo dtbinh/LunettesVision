@@ -178,7 +178,7 @@ void LunettesVideo::run() {
 	int nbArea = currentProfile->listArea.size();
 	const int temp = nbArea;
 	int frame = 0, key = 0, pbo = 0, nRet;
-	Mat finalFrame(resY, resX,CV_8UC3,Scalar(0,0,0));
+	Mat finalFrame(resY, resX,CV_8UC3);
 	setWindowsParams();
 	/// START LOOP ///
 	//////////////////////////////////////////////////////////
@@ -189,7 +189,9 @@ void LunettesVideo::run() {
 		//r->initSequenceAOI();
 		cout<<" Area "<<i<<endl;
 	}
-	
+	INT pnNum;
+	char* ppcMem;
+	char* ppcMemLast;
 	myTimer->start();
 	cout<<"Debut Boucle Acquisition"<<endl;
 	std::thread* HdrThread = new std::thread[nbArea]; //nbArea
@@ -216,7 +218,7 @@ void LunettesVideo::run() {
 					HdrThread[i] = std::thread(&Area::setHdrThreadFunction, r); //Démarrage des threads HDR
 					//r->setHdrThreadFunction();
 				} else {
-					do {
+					/*do {
 						is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
 						is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, r->camera->m_pcImageMemory);
 						nRet = is_IsVideoFinish(r->camera->hCam, &pbo);
@@ -224,7 +226,13 @@ void LunettesVideo::run() {
 					//cout << "pbo = : " << pbo << endl;
 					cv::Mat areaFrame(r->camera->height, r->camera->width, CV_8UC3, r->camera->m_pcImageMemory, r->camera->width*(r->camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
 					listMat[i].upload(areaFrame);
-					is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)r->camera->m_pcImageMemory);
+					is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, (char*)r->camera->m_pcImageMemory);*/
+
+					is_GetActSeqBuf(r->camera->hCam, &pnNum, &ppcMem, &ppcMemLast);
+					is_LockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, ppcMemLast);
+					cv::Mat areaFrame(r->camera->height, r->camera->width, CV_8UC3, ppcMemLast, r->camera->width*(r->camera->m_bitsPerPixel / 8)); // last param = number of bytes by cols
+					listMat[i].upload(areaFrame);
+					is_UnlockSeqBuf(r->camera->hCam, IS_IGNORE_PARAMETER, ppcMemLast);
 				}
 
 			}
@@ -296,6 +304,10 @@ void LunettesVideo::run() {
 
 	stopRemapThreads();
 	cout << "------------ End of the Video ------------" << endl << "Frames count : " << frame << endl;
+	for (int i = 0; i < nbArea; i++){
+		Area* r = currentProfile->listArea.at(i);
+		r->camera->exitCamera();
+	}
 	myTimer->stop();
 	myTimer->reset();
 }

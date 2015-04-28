@@ -11,6 +11,7 @@
 #include "opencv2/cudawarping.hpp"
 
 #define MAX_SEQ_BUFFERS 32767
+#define NbImageMem 2
 class Camera
 {
 
@@ -29,8 +30,13 @@ public:
 	bool active;
 	SENSORINFO m_sInfo;
 	
-	int	m_nMemoryId; // camera memory -  ID
-	char* m_pcImageMemory; // camera memory - pointer to memory
+	//int	m_nMemoryId; // camera memory -  ID
+	//char* m_pcImageMemory; // camera memory - pointer to memory
+
+	//SEQUENCE
+	int m_nMemoryId[NbImageMem]; // camera memory -  ID
+	char* m_pcImageMemory[NbImageMem]; // camera memory - pointer to memory
+	
 
 	//For HDR
 	const cv::Mat& getResponse ()const { return response; }
